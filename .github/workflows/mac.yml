@@ -24,6 +24,11 @@ jobs:
       - name: Workload MAUI
         run: dotnet workload install maui-maccatalyst
 
+      - name: Xcode
+        # Ogni versione di .NET per Mac Catalyst vuole un Xcode preciso (l'errore lo nomina): l'rc.2 vuole il 27.0, mentre
+        # l'immagine parte col 27.1. Da aggiornare insieme al workload.
+        run: sudo xcode-select -s /Applications/Xcode_27.0.app
+
       - name: Build
         # TargetFrameworks ridotto al solo Mac: anche con -f il restore passa da tutti i target e vorrebbe il workload Android.
         run: dotnet build Canora/Canora.csproj -f net11.0-maccatalyst -p:TargetFrameworks=net11.0-maccatalyst -c Debug -r maccatalyst-arm64
