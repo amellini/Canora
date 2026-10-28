@@ -30,6 +30,9 @@
 		<SupportedOSPlatformVersion Condition="'$([MSBuild]::GetTargetPlatformIdentifier($(TargetFramework)))' == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
 		<!-- Mac Catalyst 17 = macOS 14 Sonoma, il minimo del template di MAUI 11. -->
 		<SupportedOSPlatformVersion Condition="'$([MSBuild]::GetTargetPlatformIdentifier($(TargetFramework)))' == 'maccatalyst'">17.0</SupportedOSPlatformVersion>
+		<!-- Su Mac il bundle prenderebbe il nome da ApplicationTitle, e l'apostrofo di "Can'ora" rompe le trasformazioni
+		     MSBuild dei target Apple (MSB4096 su "@(... -> 'Can'ora.app/...')"): Canora.app, il titolo resta Can'ora. -->
+		<_AppBundleName Condition="'$([MSBuild]::GetTargetPlatformIdentifier($(TargetFramework)))' == 'maccatalyst'">Canora</_AppBundleName>
 		<TargetPlatformMinVersion Condition="'$([MSBuild]::GetTargetPlatformIdentifier($(TargetFramework)))' == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
 		<!-- Windows non pacchettizzato: un .exe da lanciare così com'è, senza MSIX né certificato. -->
 		<WindowsPackageType Condition="'$([MSBuild]::GetTargetPlatformIdentifier($(TargetFramework)))' == 'windows'">None</WindowsPackageType>
