@@ -25,7 +25,8 @@ jobs:
         run: dotnet workload install maui-maccatalyst
 
       - name: Build
-        run: dotnet build Canora/Canora.csproj -f net11.0-maccatalyst -c Debug -r maccatalyst-arm64
+        # TargetFrameworks ridotto al solo Mac: anche con -f il restore passa da tutti i target e vorrebbe il workload Android.
+        run: dotnet build Canora/Canora.csproj -f net11.0-maccatalyst -p:TargetFrameworks=net11.0-maccatalyst -c Debug -r maccatalyst-arm64
 
       - name: Avvio
         # Il binario dentro il bundle, lanciato così, scrive stdout e stderr (eccezioni comprese) nel log.
