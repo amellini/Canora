@@ -62,7 +62,8 @@ public partial class MainPage : ContentPage
 	// Primo avvio: prima la presentazione (nome e gusti), poi il resto. OnAppearing torna quando si chiude una pagina
 	// modale (presentazione, Impostazioni, scelta della playlist): il saluto riprende il nome.
 	// Notifiche: servono a "Tocca per ascoltare" quando l'assistente vocale non riesce ad aprire l'app (vedi
-	// AssistantFunctions). Android mostra la richiesta solo finché non viene negata. Una volta per avvio.
+	// AssistantFunctions). Android mostra la richiesta solo finché non viene negata. Una volta per avvio, come il
+	// controllo delle nuove versioni (dopo la presentazione, che non va interrotta).
 	protected override void OnAppearing()
 	{
 		base.OnAppearing();
@@ -76,6 +77,11 @@ public partial class MainPage : ContentPage
 			}
 			return;
 		}
+		if (!checkedUpdates)
+		{
+			checkedUpdates = true;
+			_ = OfferUpdateAsync();
+		}
 #if ANDROID
 		if (askedNotifications)
 			return;
@@ -84,10 +90,29 @@ public partial class MainPage : ContentPage
 #endif
 	}
 
-	bool onboarding;
+	bool onboarding, checkedUpdates;
 #if ANDROID
 	bool askedNotifications;
 #endif
+
+	// Una versione più recente su GitHub: si apre la pagina della release, oppure la si salta fino alla prossima;
+	// "Annulla" la ripropone al prossimo avvio.
+	static async Task OfferUpdateAsync()
+	{
+		if (await UpdateCheck.NewerAsync() is not { } release)
+			return;
+		const string download = "Scarica", skip = "Salta questa versione";
+		switch (await ActionPopup.ShowAsync($"È uscita Can'ora {release.TagName.TrimStart('v')}",
+			"La trovi su GitHub, con le novità. Playlist, ascolti e podcast restano.", download, skip))
+		{
+			case download:
+				await Launcher.OpenAsync(UpdateCheck.ReleasesUrl);
+				break;
+			case skip:
+				UpdateCheck.Skip(release);
+				break;
+		}
+	}
 
 	// Back di Android: chiude il player, poi il podcast, l'album/artista o la playlist aperti, poi torna alla Home, poi manda l'app
 	// in background invece di chiuderla, così la riproduzione continua (come Spotify).
