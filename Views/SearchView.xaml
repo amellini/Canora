@@ -1,0 +1,302 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Figma "Search Screen" (13:4). "Your top genres" → ricerche recenti, "Browse all" → ricerche pronte.
+     Con una query, risultati raggruppati come Spotify: «Dalle tue playlist», Artisti, Album, Brani (catalogo),
+     Playlist (Deezer e YouTube), Podcast, poi i video di YouTube con scroll infinito; le pillole sotto la barra
+     filtrano le sezioni. -->
+<ContentView x:Class="Canora.Views.SearchView"
+			 x:DataType="SearchViewModel"
+			 BackgroundColor="{DynamicResource Background}">
+	<ContentView.Resources>
+		<!-- Tile 184×116, raggio 6, testo Bold 18; passo verticale 26. Su Windows misura fissa 260×160 a passo 16: le colonne
+		     sono quante ne stanno nella larghezza, invece di due tile che si allargano con la finestra. Lo spazio fra le
+		     tile è il Padding di un contenitore e non il Margin: il FlexLayout toglie i margini dalla misura della tile
+		     (la taglia), e su Windows rientra di 8 per allineare la prima colonna al titolo. -->
+		<DataTemplate x:Key="TileTemplate" x:DataType="Tile">
+			<ContentView FlexLayout.Basis="{OnPlatform Default=47.5%, WinUI=Auto}" Padding="{OnPlatform Default='0,0,0,26', WinUI=8}">
+				<Border WidthRequest="{OnPlatform Default=-1, WinUI=260}" HeightRequest="{OnPlatform Default=116, WinUI=160}" BackgroundColor="{Binding Color}" StrokeThickness="0" StrokeShape="RoundRectangle 6">
+					<Grid>
+						<!-- Copertina della prima playlist Deezer per la query su tutta la tile, come le hero: titolo in basso su
+						     una velatura scura. Il colore della tile resta sotto finché la copertina non c'è. Alta quanto la tile:
+						     quadrata misurerebbe quanto è larga. -->
+						<Image Source="{Binding Image}" Aspect="AspectFill" HeightRequest="{OnPlatform Default=116, WinUI=160}" />
+						<BoxView>
+							<BoxView.Background>
+								<LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+									<GradientStop Color="#00000000" Offset="0.3" />
+									<GradientStop Color="#B3000000" Offset="1" />
+								</LinearGradientBrush>
+							</BoxView.Background>
+						</BoxView>
+						<Label Text="{Binding Title}" Style="{StaticResource TileTitle}" MaxLines="2" VerticalOptions="End" Margin="10,0,10,10" />
+					</Grid>
+					<Border.GestureRecognizers>
+						<TapGestureRecognizer Command="{Binding UseRecentCommand, Source={RelativeSource AncestorType={x:Type SearchViewModel}}}" CommandParameter="{Binding Query}" />
+					</Border.GestureRecognizers>
+				</Border>
+			</ContentView>
+		</DataTemplate>
+
+		<!-- Riga risultato: la stessa per YouTube e per «Dalle tue playlist» -->
+		<DataTemplate x:Key="ResultTemplate" x:DataType="Track">
+			<TrackRow Padding="0,0,14,0" MenuCommand="{Binding Player.TrackMenuCommand, Source={RelativeSource AncestorType={x:Type SearchViewModel}}}">
+				<TrackRow.GestureRecognizers>
+					<TapGestureRecognizer Command="{Binding PlayCommand, Source={RelativeSource AncestorType={x:Type SearchViewModel}}}" CommandParameter="{Binding .}" />
+					<LongPressGestureRecognizer Command="{Binding Player.TrackMenuCommand, Source={RelativeSource AncestorType={x:Type SearchViewModel}}}" CommandParameter="{Binding .}" />
+				</TrackRow.GestureRecognizers>
+			</TrackRow>
+		</DataTemplate>
+
+		<!-- Brano del catalogo: stessa riga, la coda è l'elenco «Brani» -->
+		<DataTemplate x:Key="SongTemplate" x:DataType="Track">
+			<TrackRow Padding="0,0,14,0" MenuCommand="{Binding Player.TrackMenuCommand, Source={RelativeSource AncestorType={x:Type SearchViewModel}}}">
+				<TrackRow.GestureRecognizers>
+					<TapGestureRecognizer Command="{Binding PlaySongCommand, Source={RelativeSource AncestorType={x:Type SearchViewModel}}}" CommandParameter="{Binding .}" />
+					<LongPressGestureRecognizer Command="{Binding Player.TrackMenuCommand, Source={RelativeSource AncestorType={x:Type SearchViewModel}}}" CommandParameter="{Binding .}" />
+				</TrackRow.GestureRecognizers>
+			</TrackRow>
+		</DataTemplate>
+
+		<DataTemplate x:Key="ArtistTemplate" x:DataType="CatalogArtist">
+			<ArtistCard>
+				<ArtistCard.GestureRecognizers>
+					<TapGestureRecognizer Command="{Binding OpenArtistCommand, Source={RelativeSource AncestorType={x:Type SearchViewModel}}}" CommandParameter="{Binding .}" />
+				</ArtistCard.GestureRecognizers>
+			</ArtistCard>
+		</DataTemplate>
+
+		<DataTemplate x:Key="AlbumTemplate" x:DataType="CatalogAlbum">
+			<AlbumCard>
+				<AlbumCard.GestureRecognizers>
+					<TapGestureRecognizer Command="{Binding OpenAlbumCommand, Source={RelativeSource AncestorType={x:Type SearchViewModel}}}" CommandParameter="{Binding .}" />
+				</AlbumCard.GestureRecognizers>
+			</AlbumCard>
+		</DataTemplate>
+
+		<DataTemplate x:Key="PodcastTemplate" x:DataType="Podcast">
+			<PodcastRow Margin="0,0,14,0">
+				<PodcastRow.GestureRecognizers>
+					<TapGestureRecognizer Command="{Binding OpenPodcastCommand, Source={RelativeSource AncestorType={x:Type SearchViewModel}}}" CommandParameter="{Binding .}" />
+				</PodcastRow.GestureRecognizers>
+			</PodcastRow>
+		</DataTemplate>
+	</ContentView.Resources>
+
+	<Grid RowDefinitions="Auto,Auto,Auto,*" Padding="14,24,14,0">
+		<!-- Windows: campo compatto accanto al titolo (DesktopSearchBox) al posto della barra alta del telefono -->
+		<Grid ColumnDefinitions="Auto,*" ColumnSpacing="24">
+			<Label Text="Cerca" Style="{StaticResource ScreenTitle}" SemanticProperties.HeadingLevel="Level1" VerticalOptions="Center" />
+			<DesktopSearchBox Grid.Column="1" IsVisible="{OnPlatform Default=False, WinUI=True}" MaximumWidthRequest="480" HorizontalOptions="Start" WidthRequest="480" VerticalOptions="Center"
+							  Text="{Binding Query}" Placeholder="Artisti, brani o video" SearchCommand="{Binding SubmitCommand}" />
+		</Grid>
+
+		<!-- Search bar: bianca 96%, 386×63, raggio 6, icona 56×36 #181818, placeholder Bold 19 -->
+		<Border Grid.Row="1" Margin="0,25,0,0" HeightRequest="63" IsVisible="{OnPlatform Default=True, WinUI=False}" BackgroundColor="{DynamicResource SearchBar}" StrokeThickness="0" StrokeShape="RoundRectangle 6">
+			<Grid ColumnDefinitions="56,*">
+				<Image Source="ic_search_bar.png" WidthRequest="56" HeightRequest="36" Tint.Color="{DynamicResource SearchIcon}" />
+				<Entry Grid.Column="1"
+					   Text="{Binding Query}"
+					   Placeholder="Artisti, brani o video"
+					   PlaceholderColor="{DynamicResource SearchPlaceholder}"
+					   TextColor="{DynamicResource Background}"
+					   FontFamily="MontserratBold"
+					   FontSize="19"
+					   CharacterSpacing="-0.64"
+					   ReturnType="Search"
+					   ReturnCommand="{Binding SubmitCommand}"
+					   ClearButtonVisibility="WhileEditing"
+					   VerticalOptions="Center"
+					   Margin="0,0,8,0" />
+			</Grid>
+		</Border>
+
+		<!-- Filtri: pillole come lo stato degli episodi (piena = attiva, bordata = spenta). Tutte spente all'inizio = si
+		     cerca tutto; quelle accese restringono i risultati alle loro sezioni. -->
+		<!-- Cinque pillole non stanno nella larghezza del telefono: scorrono, fino al bordo destro dello schermo -->
+		<ScrollView Grid.Row="2" Orientation="Horizontal" HorizontalScrollBarVisibility="Never" Margin="0,16,-14,0" IsVisible="{Binding HasQuery}">
+			<HorizontalStackLayout Spacing="8" Padding="0,0,14,0">
+				<Border Style="{StaticResource Chip}" SemanticProperties.Description="Filtro artisti">
+					<Border.Triggers>
+						<DataTrigger TargetType="Border" Binding="{Binding ShowArtists}" Value="True">
+							<Setter Property="BackgroundColor" Value="{DynamicResource TextPrimary}" />
+							<Setter Property="Stroke" Value="{DynamicResource TextPrimary}" />
+						</DataTrigger>
+					</Border.Triggers>
+					<Label Text="Artisti" Style="{StaticResource ChipText}">
+						<Label.Triggers>
+							<DataTrigger TargetType="Label" Binding="{Binding ShowArtists}" Value="True">
+								<Setter Property="TextColor" Value="{DynamicResource Background}" />
+							</DataTrigger>
+						</Label.Triggers>
+					</Label>
+					<Border.GestureRecognizers>
+						<TapGestureRecognizer Command="{Binding ToggleFilterCommand}" CommandParameter="artists" />
+					</Border.GestureRecognizers>
+				</Border>
+				<Border Style="{StaticResource Chip}" SemanticProperties.Description="Filtro album">
+					<Border.Triggers>
+						<DataTrigger TargetType="Border" Binding="{Binding ShowAlbums}" Value="True">
+							<Setter Property="BackgroundColor" Value="{DynamicResource TextPrimary}" />
+							<Setter Property="Stroke" Value="{DynamicResource TextPrimary}" />
+						</DataTrigger>
+					</Border.Triggers>
+					<Label Text="Album" Style="{StaticResource ChipText}">
+						<Label.Triggers>
+							<DataTrigger TargetType="Label" Binding="{Binding ShowAlbums}" Value="True">
+								<Setter Property="TextColor" Value="{DynamicResource Background}" />
+							</DataTrigger>
+						</Label.Triggers>
+					</Label>
+					<Border.GestureRecognizers>
+						<TapGestureRecognizer Command="{Binding ToggleFilterCommand}" CommandParameter="albums" />
+					</Border.GestureRecognizers>
+				</Border>
+				<Border Style="{StaticResource Chip}" SemanticProperties.Description="Filtro brani">
+					<Border.Triggers>
+						<DataTrigger TargetType="Border" Binding="{Binding ShowSongs}" Value="True">
+							<Setter Property="BackgroundColor" Value="{DynamicResource TextPrimary}" />
+							<Setter Property="Stroke" Value="{DynamicResource TextPrimary}" />
+						</DataTrigger>
+					</Border.Triggers>
+					<Label Text="Brani" Style="{StaticResource ChipText}">
+						<Label.Triggers>
+							<DataTrigger TargetType="Label" Binding="{Binding ShowSongs}" Value="True">
+								<Setter Property="TextColor" Value="{DynamicResource Background}" />
+							</DataTrigger>
+						</Label.Triggers>
+					</Label>
+					<Border.GestureRecognizers>
+						<TapGestureRecognizer Command="{Binding ToggleFilterCommand}" CommandParameter="songs" />
+					</Border.GestureRecognizers>
+				</Border>
+				<Border Style="{StaticResource Chip}" SemanticProperties.Description="Filtro playlist">
+					<Border.Triggers>
+						<DataTrigger TargetType="Border" Binding="{Binding ShowPlaylists}" Value="True">
+							<Setter Property="BackgroundColor" Value="{DynamicResource TextPrimary}" />
+							<Setter Property="Stroke" Value="{DynamicResource TextPrimary}" />
+						</DataTrigger>
+					</Border.Triggers>
+					<Label Text="Playlist" Style="{StaticResource ChipText}">
+						<Label.Triggers>
+							<DataTrigger TargetType="Label" Binding="{Binding ShowPlaylists}" Value="True">
+								<Setter Property="TextColor" Value="{DynamicResource Background}" />
+							</DataTrigger>
+						</Label.Triggers>
+					</Label>
+					<Border.GestureRecognizers>
+						<TapGestureRecognizer Command="{Binding ToggleFilterCommand}" CommandParameter="playlists" />
+					</Border.GestureRecognizers>
+				</Border>
+				<Border Style="{StaticResource Chip}" SemanticProperties.Description="Filtro podcast">
+					<Border.Triggers>
+						<DataTrigger TargetType="Border" Binding="{Binding ShowPodcasts}" Value="True">
+							<Setter Property="BackgroundColor" Value="{DynamicResource TextPrimary}" />
+							<Setter Property="Stroke" Value="{DynamicResource TextPrimary}" />
+						</DataTrigger>
+					</Border.Triggers>
+					<Label Text="Podcast" Style="{StaticResource ChipText}">
+						<Label.Triggers>
+							<DataTrigger TargetType="Label" Binding="{Binding ShowPodcasts}" Value="True">
+								<Setter Property="TextColor" Value="{DynamicResource Background}" />
+							</DataTrigger>
+						</Label.Triggers>
+					</Label>
+					<Border.GestureRecognizers>
+						<TapGestureRecognizer Command="{Binding ToggleFilterCommand}" CommandParameter="podcasts" />
+					</Border.GestureRecognizers>
+				</Border>
+			</HorizontalStackLayout>
+		</ScrollView>
+
+		<!-- Senza query: tile -->
+		<ScrollView Grid.Row="3" IsVisible="{Binding IsIdle}" VerticalScrollBarVisibility="Never">
+			<VerticalStackLayout Padding="0,25,0,170">
+				<Grid ColumnDefinitions="*,Auto" Margin="0,0,0,22" IsVisible="{Binding HasRecentSearches}">
+					<Label Text="Ricerche recenti" Style="{StaticResource SubsectionTitle}" />
+					<Label Grid.Column="1" Text="Cancella" Style="{StaticResource Caption}" VerticalOptions="Center">
+						<Label.GestureRecognizers>
+							<TapGestureRecognizer Command="{Binding ClearRecentCommand}" />
+						</Label.GestureRecognizers>
+					</Label>
+				</Grid>
+				<FlexLayout BindableLayout.ItemsSource="{Binding RecentTiles}" BindableLayout.ItemTemplate="{StaticResource TileTemplate}" Wrap="Wrap" JustifyContent="{OnPlatform Default=SpaceBetween, WinUI=Start}" Margin="{OnPlatform Default=0, WinUI='-8,0,0,0'}" AlignContent="Start" AlignItems="Start" IsVisible="{Binding HasRecentSearches}" />
+
+				<Label Text="Sfoglia tutto" Style="{StaticResource SubsectionTitle}" Margin="0,6,0,22" />
+				<FlexLayout BindableLayout.ItemsSource="{Binding BrowseTiles}" BindableLayout.ItemTemplate="{StaticResource TileTemplate}" Wrap="Wrap" JustifyContent="{OnPlatform Default=SpaceBetween, WinUI=Start}" Margin="{OnPlatform Default=0, WinUI='-8,0,0,0'}" AlignContent="Start" AlignItems="Start" />
+			</VerticalStackLayout>
+		</ScrollView>
+
+		<!-- Con query: le sezioni nell'intestazione, poi i video di YouTube come elementi (scroll infinito) -->
+		<CollectionView Grid.Row="3"
+						IsVisible="{Binding HasQuery}"
+						ItemsSource="{Binding VisibleResults}"
+						ItemTemplate="{StaticResource ResultTemplate}"
+						RemainingItemsThreshold="6"
+						RemainingItemsThresholdReachedCommand="{Binding LoadMoreCommand}"
+						ItemsUpdatingScrollMode="KeepScrollOffset"
+						SelectionMode="None"
+						Margin="4,20,-14,0"
+						VerticalScrollBarVisibility="Never">
+			<CollectionView.ItemsLayout>
+				<LinearItemsLayout Orientation="Vertical" ItemSpacing="19" />
+			</CollectionView.ItemsLayout>
+			<!-- Stessi titoli di sezione di "Ricerche recenti" / "Sfoglia tutto"; ogni sezione sparisce se vuota o filtrata -->
+			<CollectionView.Header>
+				<VerticalStackLayout>
+					<VerticalStackLayout IsVisible="{Binding PlaylistMatchesVisible}" Spacing="19" Margin="0,0,0,30">
+						<Label Text="Dalle tue playlist" Style="{StaticResource SubsectionTitle}" Margin="0,0,0,3" />
+						<VerticalStackLayout BindableLayout.ItemsSource="{Binding PlaylistMatches}" BindableLayout.ItemTemplate="{StaticResource ResultTemplate}" Spacing="19" />
+					</VerticalStackLayout>
+
+					<!-- Caroselli fino al bordo destro dello schermo: la lista annulla il Padding della pagina -->
+					<VerticalStackLayout IsVisible="{Binding ArtistsVisible}" Spacing="16" Margin="0,0,0,30">
+						<Label Text="Artisti" Style="{StaticResource SubsectionTitle}" />
+						<ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
+							<HorizontalStackLayout BindableLayout.ItemsSource="{Binding Artists}" BindableLayout.ItemTemplate="{StaticResource ArtistTemplate}" Spacing="16" Padding="0,0,14,0" />
+						</ScrollView>
+					</VerticalStackLayout>
+
+					<VerticalStackLayout IsVisible="{Binding AlbumsVisible}" Spacing="16" Margin="0,0,0,30">
+						<Label Text="Album" Style="{StaticResource SubsectionTitle}" />
+						<ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
+							<HorizontalStackLayout BindableLayout.ItemsSource="{Binding Albums}" BindableLayout.ItemTemplate="{StaticResource AlbumTemplate}" Spacing="16" Padding="0,0,14,0" />
+						</ScrollView>
+					</VerticalStackLayout>
+
+					<VerticalStackLayout IsVisible="{Binding SongsVisible}" Spacing="19" Margin="0,0,0,30">
+						<Label Text="Brani" Style="{StaticResource SubsectionTitle}" Margin="0,0,0,3" />
+						<VerticalStackLayout BindableLayout.ItemsSource="{Binding Songs}" BindableLayout.ItemTemplate="{StaticResource SongTemplate}" Spacing="19" />
+					</VerticalStackLayout>
+
+					<VerticalStackLayout IsVisible="{Binding PlaylistsVisible}" Spacing="16" Margin="0,0,0,30">
+						<Label Text="Playlist" Style="{StaticResource SubsectionTitle}" />
+						<ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
+							<HorizontalStackLayout BindableLayout.ItemsSource="{Binding CatalogPlaylists}" BindableLayout.ItemTemplate="{StaticResource AlbumTemplate}" Spacing="16" Padding="0,0,14,0" />
+						</ScrollView>
+					</VerticalStackLayout>
+
+					<VerticalStackLayout IsVisible="{Binding PodcastsVisible}" Spacing="19" Margin="0,0,0,30">
+						<Label Text="Podcast" Style="{StaticResource SubsectionTitle}" Margin="0,0,0,3" />
+						<VerticalStackLayout BindableLayout.ItemsSource="{Binding PodcastResults}" BindableLayout.ItemTemplate="{StaticResource PodcastTemplate}" Spacing="19" />
+					</VerticalStackLayout>
+
+					<Label Text="Altri brani da YouTube" Style="{StaticResource SubsectionTitle}" IsVisible="{Binding YouTubeVisible}" Margin="0,0,0,22" />
+				</VerticalStackLayout>
+			</CollectionView.Header>
+			<CollectionView.Footer>
+				<VerticalStackLayout Padding="0,24,14,170" Spacing="16">
+					<ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+					<Label Text="Nessun risultato" Style="{StaticResource SubsectionTitle}" HorizontalTextAlignment="Center" IsVisible="{Binding NoResults}" />
+					<VerticalStackLayout Spacing="12" IsVisible="{Binding HasError}">
+						<Label Text="Impossibile raggiungere YouTube. Controlla la connessione." Style="{StaticResource Caption}" HorizontalTextAlignment="Center" />
+						<Border BackgroundColor="{DynamicResource TextPrimary}" StrokeThickness="0" StrokeShape="RoundRectangle 24" Padding="24,10" HorizontalOptions="Center">
+							<Label Text="Riprova" TextColor="{DynamicResource Background}" FontFamily="MontserratBold" FontSize="15" />
+							<Border.GestureRecognizers>
+								<TapGestureRecognizer Command="{Binding RetryCommand}" />
+							</Border.GestureRecognizers>
+						</Border>
+					</VerticalStackLayout>
+				</VerticalStackLayout>
+			</CollectionView.Footer>
+		</CollectionView>
+	</Grid>
+</ContentView>

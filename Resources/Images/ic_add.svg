@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- "+" per aggiungere a una playlist (non presente nel Figma): maschera nera, tratto come il cuore che sostituisce. -->
+<svg width="28" height="28" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+	<circle cx="12" cy="12" r="10.25" fill="none" stroke="#000000" stroke-width="1.5" />
+	<path d="M12 7v10M7 12h10" fill="none" stroke="#000000" stroke-width="1.5" stroke-linecap="round" />
+</svg>

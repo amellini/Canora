@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Dettaglio podcast, sullo schema della "Playlist Screen" del Figma come il dettaglio playlist: hero con back,
+     titolo e autore sopra la copertina, badge PODCAST + episodi, Segui/Smetti di seguire, ⋮, play verde, descrizione, episodi.
+     Sta sopra i tab ma sotto mini-player e nav (vedi MainPage). -->
+<ContentView x:Class="Canora.Views.PodcastDetailView"
+			 x:DataType="PodcastsViewModel"
+			 Background="{DynamicResource LibraryBackground}">
+	<Grid>
+		<!-- Niente margine laterale sulla lista: l'hero va da bordo a bordo, il resto ha il suo -->
+		<CollectionView ItemsSource="{Binding Episodes}" SelectionMode="None" VerticalScrollBarVisibility="Never">
+			<CollectionView.ItemsLayout>
+				<LinearItemsLayout Orientation="Vertical" ItemSpacing="19" />
+			</CollectionView.ItemsLayout>
+
+			<CollectionView.Header>
+				<VerticalStackLayout Padding="0,0,0,30">
+					<Hero x:Name="PodcastHero" Source="{Binding Selected.ArtworkUrl}" Title="{Binding Selected.Title}" Subtitle="{Binding Selected.Author}">
+						<Grid WidthRequest="48" HeightRequest="48" HorizontalOptions="Start" VerticalOptions="Start" Margin="6,6,0,0" SemanticProperties.Description="Indietro">
+							<Image Source="ic_back.png" WidthRequest="25" HeightRequest="25" Rotation="180" Tint.Color="{Binding TopColor, Source={x:Reference PodcastHero}}" />
+							<Grid.GestureRecognizers>
+								<TapGestureRecognizer Command="{Binding CloseCommand}" />
+							</Grid.GestureRecognizers>
+						</Grid>
+					</Hero>
+
+					<VerticalStackLayout Padding="18,0">
+						<Grid ColumnDefinitions="Auto,*" ColumnSpacing="6" Margin="0,16,0,0">
+							<Border BackgroundColor="{DynamicResource Accent}" StrokeThickness="0" StrokeShape="RoundRectangle 2" Padding="3,1" VerticalOptions="Center">
+								<Label Text="PODCAST" Style="{StaticResource BadgeText}" />
+							</Border>
+							<Label Grid.Column="1" Text="{Binding Selected.EpisodesText}" Style="{StaticResource Description}" VerticalOptions="Center" />
+						</Grid>
+
+						<!-- Buttons: Segui (pillola bordata) / Smetti di seguire (pillola piena), ⋮, play verde 60 -->
+						<Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="24" HeightRequest="60" Margin="0,8,0,0">
+							<Border StrokeThickness="1" Stroke="{DynamicResource TextPrimary}" StrokeShape="RoundRectangle 16" Padding="16,6" VerticalOptions="Center">
+								<Border.Triggers>
+									<DataTrigger TargetType="Border" Binding="{Binding IsSelectedFollowed}" Value="True">
+										<Setter Property="BackgroundColor" Value="{DynamicResource TextPrimary}" />
+									</DataTrigger>
+								</Border.Triggers>
+								<Label Text="Segui" FontFamily="MontserratBold" FontSize="14" TextColor="{DynamicResource TextPrimary}">
+									<Label.Triggers>
+										<DataTrigger TargetType="Label" Binding="{Binding IsSelectedFollowed}" Value="True">
+											<Setter Property="Text" Value="Smetti di seguire" />
+											<Setter Property="TextColor" Value="{DynamicResource Background}" />
+										</DataTrigger>
+									</Label.Triggers>
+								</Label>
+								<Border.GestureRecognizers>
+									<TapGestureRecognizer Command="{Binding ToggleFollowCommand}" />
+								</Border.GestureRecognizers>
+							</Border>
+							<Grid Grid.Column="1" WidthRequest="30" SemanticProperties.Description="Opzioni podcast">
+								<Image Source="ic_dots_row.png" WidthRequest="10" HeightRequest="25" Style="{StaticResource Icon}" />
+								<Grid.GestureRecognizers>
+									<TapGestureRecognizer Command="{Binding PodcastMenuCommand}" />
+								</Grid.GestureRecognizers>
+							</Grid>
+							<PlayAllButton Grid.Column="3" Items="{Binding Episodes}" Command="{Binding PlayLatestCommand}" />
+						</Grid>
+
+						<Label Text="{Binding Selected.Description}" Style="{StaticResource Caption}" MaxLines="4" LineBreakMode="TailTruncation" Margin="0,16,0,0" />
+						<ActivityIndicator IsRunning="{Binding IsLoadingEpisodes}" IsVisible="{Binding IsLoadingEpisodes}" Margin="0,24,0,0" />
+						<Label Text="Impossibile leggere il feed del podcast. Controlla la connessione." Style="{StaticResource Caption}" HorizontalTextAlignment="Center" Margin="0,24,0,0" IsVisible="{Binding FeedFailed}" />
+					</VerticalStackLayout>
+				</VerticalStackLayout>
+			</CollectionView.Header>
+
+			<CollectionView.ItemTemplate>
+				<DataTemplate x:DataType="Episode">
+					<EpisodeRow Padding="18,0" ListenedCommand="{Binding ToggleListenedCommand, Source={RelativeSource AncestorType={x:Type PodcastsViewModel}}}">
+						<EpisodeRow.GestureRecognizers>
+							<TapGestureRecognizer Command="{Binding PlayEpisodeCommand, Source={RelativeSource AncestorType={x:Type PodcastsViewModel}}}" CommandParameter="{Binding .}" />
+						</EpisodeRow.GestureRecognizers>
+					</EpisodeRow>
+				</DataTemplate>
+			</CollectionView.ItemTemplate>
+
+			<CollectionView.Footer>
+				<BoxView HeightRequest="170" />
+			</CollectionView.Footer>
+		</CollectionView>
+	</Grid>
+</ContentView>

@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Pagina artista come Spotify, nello stile del dettaglio playlist/podcast: hero con foto, nome e fan, shuffle e play
+     verde, i più ascoltati, poi i caroselli di album e singoli. Sopra il tab, sotto mini-player e nav (vedi MainPage). -->
+<ContentView x:Class="Canora.Views.ArtistView"
+			 x:DataType="CatalogViewModel"
+			 Background="{DynamicResource LibraryBackground}">
+	<ContentView.Resources>
+		<DataTemplate x:Key="ReleaseTemplate" x:DataType="CatalogAlbum">
+			<AlbumCard>
+				<AlbumCard.GestureRecognizers>
+					<TapGestureRecognizer Command="{Binding OpenAlbumCommand, Source={RelativeSource AncestorType={x:Type CatalogViewModel}}}" CommandParameter="{Binding .}" />
+				</AlbumCard.GestureRecognizers>
+			</AlbumCard>
+		</DataTemplate>
+	</ContentView.Resources>
+
+	<Grid>
+		<CollectionView ItemsSource="{Binding TopTracks}" SelectionMode="None" VerticalScrollBarVisibility="Never">
+			<CollectionView.ItemsLayout>
+				<LinearItemsLayout Orientation="Vertical" ItemSpacing="19" />
+			</CollectionView.ItemsLayout>
+
+			<CollectionView.Header>
+				<VerticalStackLayout Padding="0,0,0,24">
+					<Hero x:Name="ArtistHero" Source="{Binding Artist.PictureLarge}" Title="{Binding Artist.Name}" Subtitle="{Binding Artist.FansText}">
+						<Grid WidthRequest="48" HeightRequest="48" HorizontalOptions="Start" VerticalOptions="Start" Margin="6,6,0,0" SemanticProperties.Description="Indietro">
+							<Image Source="ic_back.png" WidthRequest="25" HeightRequest="25" Rotation="180" Tint.Color="{Binding TopColor, Source={x:Reference ArtistHero}}" />
+							<Grid.GestureRecognizers>
+								<TapGestureRecognizer Command="{Binding BackCommand}" />
+							</Grid.GestureRecognizers>
+						</Grid>
+					</Hero>
+
+					<VerticalStackLayout Padding="18,0">
+						<!-- Buttons: "+" (i più ascoltati in una playlist col nome dell'artista), shuffle, play verde 60 (parte dal
+						     primo dei più ascoltati, o a caso con lo shuffle; pausa mentre ne suona uno) -->
+						<Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="35" HeightRequest="60" Margin="0,16,0,0">
+							<Image Source="ic_add.png" WidthRequest="30" HeightRequest="30" Style="{StaticResource Icon}" SemanticProperties.Description="Crea una playlist con i brani popolari">
+								<Image.GestureRecognizers>
+									<TapGestureRecognizer Command="{Binding AddTopToPlaylistCommand}" />
+								</Image.GestureRecognizers>
+							</Image>
+							<Image Grid.Column="1" Source="ic_shuffle.png" WidthRequest="30" HeightRequest="30" Style="{StaticResource Icon}" SemanticProperties.Description="Riproduzione casuale">
+								<Image.Triggers>
+									<DataTrigger TargetType="Image" Binding="{Binding Player.IsShuffle}" Value="True">
+										<Setter Property="Tint.Color" Value="{DynamicResource Accent}" />
+									</DataTrigger>
+								</Image.Triggers>
+								<Image.GestureRecognizers>
+									<TapGestureRecognizer Command="{Binding Player.ToggleShuffleCommand}" />
+								</Image.GestureRecognizers>
+							</Image>
+							<PlayAllButton Grid.Column="3" Items="{Binding TopTracks}" Command="{Binding PlayTopCommand}" />
+						</Grid>
+
+						<Label Text="Popolari" Style="{StaticResource SubsectionTitle}" Margin="0,16,0,0" />
+						<ActivityIndicator IsRunning="{Binding IsLoadingArtist}" IsVisible="{Binding IsLoadingArtist}" Margin="0,24,0,0" />
+						<Label Text="Impossibile caricare l'artista. Controlla la connessione." Style="{StaticResource Caption}" HorizontalTextAlignment="Center" Margin="0,24,0,0" IsVisible="{Binding LoadFailed}" />
+					</VerticalStackLayout>
+				</VerticalStackLayout>
+			</CollectionView.Header>
+
+			<CollectionView.ItemTemplate>
+				<DataTemplate x:DataType="Track">
+					<TrackRow Padding="18,0" MenuCommand="{Binding Player.TrackMenuCommand, Source={RelativeSource AncestorType={x:Type CatalogViewModel}}}">
+						<TrackRow.GestureRecognizers>
+							<TapGestureRecognizer Command="{Binding PlayTopCommand, Source={RelativeSource AncestorType={x:Type CatalogViewModel}}}" CommandParameter="{Binding .}" />
+							<LongPressGestureRecognizer Command="{Binding Player.TrackMenuCommand, Source={RelativeSource AncestorType={x:Type CatalogViewModel}}}" CommandParameter="{Binding .}" />
+						</TrackRow.GestureRecognizers>
+					</TrackRow>
+				</DataTemplate>
+			</CollectionView.ItemTemplate>
+
+			<CollectionView.Footer>
+				<VerticalStackLayout Padding="18,30,0,170" Spacing="16">
+					<Label Text="Album" Style="{StaticResource SubsectionTitle}" IsVisible="{Binding HasAlbums}" />
+					<ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never" IsVisible="{Binding HasAlbums}">
+						<HorizontalStackLayout BindableLayout.ItemsSource="{Binding Albums}" BindableLayout.ItemTemplate="{StaticResource ReleaseTemplate}" Spacing="16" Padding="0,0,18,0" />
+					</ScrollView>
+					<Label Text="Singoli ed EP" Style="{StaticResource SubsectionTitle}" IsVisible="{Binding HasSingles}" Margin="0,14,0,0" />
+					<ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never" IsVisible="{Binding HasSingles}">
+						<HorizontalStackLayout BindableLayout.ItemsSource="{Binding Singles}" BindableLayout.ItemTemplate="{StaticResource ReleaseTemplate}" Spacing="16" Padding="0,0,18,0" />
+					</ScrollView>
+				</VerticalStackLayout>
+			</CollectionView.Footer>
+		</CollectionView>
+	</Grid>
+</ContentView>

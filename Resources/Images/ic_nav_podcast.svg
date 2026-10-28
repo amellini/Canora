@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Tab Podcast (il Figma ha "Premium" in quel posto, col logo Spotify): microfono a tratto, stessa cornice 52×34
+     delle altre icone della nav, maschera nera colorata a runtime. -->
+<svg width="52" height="34" viewBox="0 0 52 34" xmlns="http://www.w3.org/2000/svg">
+	<rect x="20.5" y="2" width="11" height="18" rx="5.5" fill="none" stroke="#000000" stroke-width="2.4" />
+	<path d="M15.5 14.5a10.5 10.5 0 0 0 21 0M26 25v6M20.5 31h11" fill="none" stroke="#000000" stroke-width="2.4" stroke-linecap="round" />
+</svg>

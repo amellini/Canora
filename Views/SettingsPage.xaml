@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Impostazioni (dall'icona della Home): pagina modale come la scelta della playlist. Scelta del tema (si applica
+     subito) e pulizia della cronologia. -->
+<ContentPage x:Class="Canora.Views.SettingsPage"
+			 x:DataType="LibraryViewModel"
+			 Background="{DynamicResource LibraryBackground}"
+			 SafeAreaEdges="None">
+	<Grid RowDefinitions="Auto,*" Padding="0,10,0,0">
+
+		<Grid ColumnDefinitions="44,*,44" MinimumHeightRequest="44" Margin="18,0">
+			<Grid SemanticProperties.Description="Chiudi">
+				<Image Source="ic_chevron_down.png" WidthRequest="20" HeightRequest="20" Rotation="90" Style="{StaticResource Icon}" HorizontalOptions="Start" VerticalOptions="Center" />
+				<Grid.GestureRecognizers>
+					<TapGestureRecognizer Tapped="OnCloseTapped" />
+				</Grid.GestureRecognizers>
+			</Grid>
+			<Label Grid.Column="1" Text="Impostazioni" FontFamily="PoppinsSemiBold" FontSize="16" CharacterSpacing="-0.32" HorizontalTextAlignment="Center" VerticalOptions="Center" SemanticProperties.HeadingLevel="Level1" />
+		</Grid>
+
+		<ScrollView Grid.Row="1" VerticalScrollBarVisibility="Never">
+			<VerticalStackLayout Padding="0,0,0,48">
+				<Label Text="Tema" Style="{StaticResource SubsectionTitle}" Margin="18,24,18,14" />
+
+				<!-- Un telefono per tema, con una Home in miniatura nei colori del tema stesso. Fino ai bordi dello schermo
+				     (per questo il margine laterale sta sulle sezioni e non sulla pagina), header e footer fanno da rientro. -->
+				<CollectionView x:Name="ThemeList" ItemsSource="{x:Static Themes.All}" SelectionMode="Single" SelectionChanged="OnThemeSelected"
+								HeightRequest="252" HorizontalScrollBarVisibility="Never">
+					<CollectionView.ItemsLayout>
+						<LinearItemsLayout Orientation="Horizontal" ItemSpacing="0" />
+					</CollectionView.ItemsLayout>
+					<CollectionView.Header>
+						<BoxView WidthRequest="4" />
+					</CollectionView.Header>
+					<CollectionView.Footer>
+						<BoxView WidthRequest="18" />
+					</CollectionView.Footer>
+					<CollectionView.ItemTemplate>
+						<DataTemplate x:DataType="Theme">
+							<!-- Radice trasparente anche da selezionata: altrimenti Android ci disegna dietro la sua evidenziazione -->
+							<VerticalStackLayout BackgroundColor="Transparent" Spacing="8" Padding="14,0,0,0" SemanticProperties.Description="{Binding Name}">
+								<VisualStateManager.VisualStateGroups>
+									<VisualStateGroupList>
+										<VisualStateGroup x:Name="CommonStates">
+											<VisualState x:Name="Normal" />
+											<VisualState x:Name="Selected">
+												<VisualState.Setters>
+													<Setter Property="BackgroundColor" Value="Transparent" />
+													<Setter TargetName="Phone" Property="Border.Stroke" Value="{DynamicResource Accent}" />
+													<Setter TargetName="ThemeName" Property="Label.TextColor" Value="{DynamicResource Accent}" />
+												</VisualState.Setters>
+											</VisualState>
+										</VisualStateGroup>
+									</VisualStateGroupList>
+								</VisualStateManager.VisualStateGroups>
+
+								<!-- Il telefono: cornice (accento se è il tema in uso) e schermo arrotondato -->
+								<Border x:Name="Phone" WidthRequest="96" HeightRequest="204" StrokeThickness="3" Stroke="{DynamicResource SeekRail}" StrokeShape="RoundRectangle 16.5">
+									<Grid RowDefinitions="*,Auto" Background="{Binding Preview}">
+
+										<!-- Saluto con le due icone, poi due file di card come "Ascoltati di recente" e "Le tue playlist" -->
+										<VerticalStackLayout Padding="7,15,0,0">
+											<Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="4" Margin="0,0,7,0">
+												<BoxView Color="{Binding Text}" WidthRequest="42" HeightRequest="5" CornerRadius="2.5" HorizontalOptions="Start" />
+												<BoxView Grid.Column="1" Color="{Binding Text}" WidthRequest="5" HeightRequest="5" CornerRadius="2.5" />
+												<BoxView Grid.Column="2" Color="{Binding Text}" WidthRequest="5" HeightRequest="5" CornerRadius="2.5" />
+											</Grid>
+											<BoxView Color="{Binding Text}" WidthRequest="48" HeightRequest="4.5" CornerRadius="2" HorizontalOptions="Start" Margin="0,12,0,5" />
+											<HorizontalStackLayout Spacing="4.5">
+												<VerticalStackLayout Spacing="2">
+													<BoxView Fill="{Binding Cover}" WidthRequest="34.5" HeightRequest="34.5" />
+													<BoxView Color="{Binding Muted}" WidthRequest="28.5" HeightRequest="2" CornerRadius="1" HorizontalOptions="Start" />
+													<BoxView Color="{Binding Muted}" WidthRequest="19.5" HeightRequest="2" CornerRadius="1" HorizontalOptions="Start" />
+												</VerticalStackLayout>
+												<VerticalStackLayout Spacing="2">
+													<BoxView Fill="{Binding Cover}" WidthRequest="34.5" HeightRequest="34.5" />
+													<BoxView Color="{Binding Muted}" WidthRequest="25.5" HeightRequest="2" CornerRadius="1" HorizontalOptions="Start" />
+													<BoxView Color="{Binding Muted}" WidthRequest="16.5" HeightRequest="2" CornerRadius="1" HorizontalOptions="Start" />
+												</VerticalStackLayout>
+												<BoxView Fill="{Binding Cover}" WidthRequest="34.5" HeightRequest="34.5" VerticalOptions="Start" />
+											</HorizontalStackLayout>
+											<BoxView Color="{Binding Text}" WidthRequest="37.5" HeightRequest="4.5" CornerRadius="2" HorizontalOptions="Start" Margin="0,10.5,0,5" />
+											<HorizontalStackLayout Spacing="4.5">
+												<VerticalStackLayout Spacing="2">
+													<BoxView Fill="{Binding Cover}" WidthRequest="34.5" HeightRequest="34.5" />
+													<BoxView Color="{Binding Muted}" WidthRequest="22.5" HeightRequest="2" CornerRadius="1" HorizontalOptions="Start" />
+												</VerticalStackLayout>
+												<VerticalStackLayout Spacing="2">
+													<BoxView Fill="{Binding Cover}" WidthRequest="34.5" HeightRequest="34.5" />
+													<BoxView Color="{Binding Muted}" WidthRequest="27" HeightRequest="2" CornerRadius="1" HorizontalOptions="Start" />
+												</VerticalStackLayout>
+												<BoxView Fill="{Binding Cover}" WidthRequest="34.5" HeightRequest="34.5" VerticalOptions="Start" />
+											</HorizontalStackLayout>
+										</VerticalStackLayout>
+
+										<!-- Mini-player (play nel colore d'accento) e nav con Home attiva, sulla sfumatura del fondo -->
+										<VerticalStackLayout Grid.Row="1" Background="{Binding Fade}" Padding="4,9,4,5" Spacing="5">
+											<Grid HeightRequest="12">
+												<BoxView Color="{Binding Player}" CornerRadius="2" />
+												<BoxView Fill="{Binding Cover}" WidthRequest="7.5" HeightRequest="7.5" HorizontalOptions="Start" Margin="2,0,0,0" />
+												<BoxView Color="{Binding Accent}" WidthRequest="6" HeightRequest="6" CornerRadius="3" HorizontalOptions="End" Margin="0,0,3,0" />
+											</Grid>
+											<Grid ColumnDefinitions="*,*,*,*">
+												<BoxView Color="{Binding Text}" WidthRequest="7" HeightRequest="7" CornerRadius="1.5" />
+												<BoxView Grid.Column="1" Color="{Binding Nav}" WidthRequest="7" HeightRequest="7" CornerRadius="3.5" />
+												<BoxView Grid.Column="2" Color="{Binding Nav}" WidthRequest="7" HeightRequest="7" CornerRadius="1.5" />
+												<BoxView Grid.Column="3" Color="{Binding Nav}" WidthRequest="7" HeightRequest="7" CornerRadius="1.5" />
+											</Grid>
+										</VerticalStackLayout>
+									</Grid>
+								</Border>
+
+								<Label x:Name="ThemeName" Text="{Binding Name}" FontFamily="MontserratBold" FontSize="13" WidthRequest="96" HorizontalTextAlignment="Center" MaxLines="2" LineBreakMode="WordWrap" />
+							</VerticalStackLayout>
+						</DataTemplate>
+					</CollectionView.ItemTemplate>
+				</CollectionView>
+
+				<!-- La presentazione del primo avvio, di nuovo: parte dalle scelte salvate -->
+				<Label Text="Profilo" Style="{StaticResource SubsectionTitle}" Margin="18,20,18,8" />
+				<Label Text="Il nome con cui ti saluta la Home e i generi e gli artisti che ti piacciono." Style="{StaticResource Caption}" Margin="18,0,18,14" />
+				<Border Margin="18,0" StrokeThickness="1" Stroke="{DynamicResource TextPrimary}" StrokeShape="RoundRectangle 22" HeightRequest="44">
+					<Label Text="Modifica nome e gusti" FontFamily="MontserratBold" FontSize="14" HorizontalOptions="Center" VerticalOptions="Center" />
+					<Border.GestureRecognizers>
+						<TapGestureRecognizer Tapped="OnProfileTapped" />
+					</Border.GestureRecognizers>
+				</Border>
+
+				<Label Text="Cronologia" Style="{StaticResource SubsectionTitle}" Margin="18,30,18,14" />
+				<VerticalStackLayout Spacing="12" Margin="18,0">
+					<Border StrokeThickness="1" Stroke="{DynamicResource TextPrimary}" StrokeShape="RoundRectangle 22" HeightRequest="44">
+						<Label Text="Cancella ascoltati di recente" FontFamily="MontserratBold" FontSize="14" HorizontalOptions="Center" VerticalOptions="Center" />
+						<Border.GestureRecognizers>
+							<TapGestureRecognizer Command="{Binding ClearRecentCommand}" />
+						</Border.GestureRecognizers>
+					</Border>
+					<Border StrokeThickness="1" Stroke="{DynamicResource TextPrimary}" StrokeShape="RoundRectangle 22" HeightRequest="44">
+						<Label Text="Cancella ricerche recenti" FontFamily="MontserratBold" FontSize="14" HorizontalOptions="Center" VerticalOptions="Center" />
+						<Border.GestureRecognizers>
+							<TapGestureRecognizer Command="{Binding ClearSearchesCommand}" />
+						</Border.GestureRecognizers>
+					</Border>
+				</VerticalStackLayout>
+
+				<!-- Facoltativo: il token dell'account ListenBrainz aggiunge le sue proposte alla Scelta settimanale -->
+				<Label Text="ListenBrainz" Style="{StaticResource SubsectionTitle}" Margin="18,30,18,8" />
+				<Label Text="Facoltativo: incolla il token del tuo account (listenbrainz.org → Impostazioni) e la Scelta settimanale aggiunge anche le proposte di ListenBrainz." Style="{StaticResource Caption}" Margin="18,0,18,14" />
+				<Border Margin="18,0" HeightRequest="48" StrokeThickness="1" Stroke="{DynamicResource TextPrimary}" StrokeShape="RoundRectangle 8" Padding="14,0">
+					<Entry Text="{Binding ListenBrainzToken}" Placeholder="Token utente" PlaceholderColor="{DynamicResource TextSecondary}" TextColor="{DynamicResource TextPrimary}"
+						   FontFamily="MontserratMedium" FontSize="14" IsPassword="True" IsSpellCheckEnabled="False" IsTextPredictionEnabled="False" VerticalOptions="Center" />
+				</Border>
+			</VerticalStackLayout>
+		</ScrollView>
+	</Grid>
+</ContentPage>

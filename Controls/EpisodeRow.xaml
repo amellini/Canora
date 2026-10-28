@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Riga episodio, come le righe brano: copertina, titolo, badge + "data · durata", e sotto il pulsante di stato.
+     Badge: NUOVO (verde accento) o "12 MIN RIMASTI" con barra d'avanzamento; gli ascoltati hanno la riga attenuata. -->
+<ContentView x:Class="Canora.Controls.EpisodeRow"
+			 x:Name="Root"
+			 x:DataType="Episode">
+	<VerticalStackLayout Spacing="10">
+		<Grid ColumnDefinitions="61,*" ColumnSpacing="8" MinimumHeightRequest="65">
+			<Grid.Triggers>
+				<DataTrigger TargetType="Grid" Binding="{Binding Listened}" Value="True">
+					<Setter Property="Opacity" Value="0.5" />
+				</DataTrigger>
+			</Grid.Triggers>
+			<Grid HeightRequest="61" VerticalOptions="Start">
+				<BoxView Fill="{DynamicResource PlaylistCover}" />
+				<Image Source="{Binding ImageUrl}" Aspect="AspectFill" />
+				<NowPlayingBadge x:Name="Playing" IsVisible="False" />
+			</Grid>
+			<VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="6">
+				<Label x:Name="TitleLabel" Text="{Binding Title}" Style="{StaticResource RowTitle}" FontSize="17" MaxLines="2" />
+				<!-- Niente ColumnSpacing: col badge nascosto la data deve partire a filo, lo spazio lo dà il Margin del badge -->
+				<Grid ColumnDefinitions="Auto,*">
+					<Border IsVisible="{Binding HasBadge}" BackgroundColor="{DynamicResource Badge}" StrokeThickness="0" StrokeShape="RoundRectangle 2" Padding="3,1" Margin="0,0,6,0" VerticalOptions="Center">
+						<Border.Triggers>
+							<DataTrigger TargetType="Border" Binding="{Binding IsNew}" Value="True">
+								<Setter Property="BackgroundColor" Value="{DynamicResource Accent}" />
+							</DataTrigger>
+						</Border.Triggers>
+						<Label Text="{Binding Badge}" Style="{StaticResource BadgeText}" />
+					</Border>
+					<Label Grid.Column="1" Text="{Binding Info}" Style="{StaticResource RowArtist}" FontSize="14" VerticalOptions="Center" />
+				</Grid>
+				<!-- Avanzamento: come la linea del mini-player -->
+				<Grid IsVisible="{Binding InProgress}" HeightRequest="3" Margin="0,2,24,0">
+					<BoxView Color="{DynamicResource ProgressTrack}" CornerRadius="1.5" />
+					<BoxView Color="{DynamicResource Accent}" CornerRadius="1.5" AnchorX="0" ScaleX="{Binding Progress}" />
+				</Grid>
+			</VerticalStackLayout>
+		</Grid>
+
+		<!-- Stato d'ascolto in un solo pulsante: "Da ascoltare" bordato, "Ascoltato" pieno (come "Smetti di seguire").
+		     Il tocco lo inverte. Fuori dalla parte attenuata, così resta leggibile anche sugli ascoltati. -->
+		<Border Style="{StaticResource Chip}" HorizontalOptions="Start" Margin="69,0,0,0" SemanticProperties.Description="Cambia stato d'ascolto">
+			<Border.Triggers>
+				<DataTrigger TargetType="Border" Binding="{Binding Listened}" Value="True">
+					<Setter Property="BackgroundColor" Value="{DynamicResource TextPrimary}" />
+					<Setter Property="Stroke" Value="{DynamicResource TextPrimary}" />
+				</DataTrigger>
+			</Border.Triggers>
+			<Label Text="Da ascoltare" Style="{StaticResource ChipText}">
+				<Label.Triggers>
+					<DataTrigger TargetType="Label" Binding="{Binding Listened}" Value="True">
+						<Setter Property="Text" Value="Ascoltato" />
+						<Setter Property="TextColor" Value="{DynamicResource Background}" />
+					</DataTrigger>
+				</Label.Triggers>
+			</Label>
+			<Border.GestureRecognizers>
+				<TapGestureRecognizer Command="{Binding ListenedCommand, Source={x:Reference Root}}" CommandParameter="{Binding .}" />
+			</Border.GestureRecognizers>
+		</Border>
+	</VerticalStackLayout>
+</ContentView>

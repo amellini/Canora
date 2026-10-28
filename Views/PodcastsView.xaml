@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Tab Podcast, sullo schema del tab Cerca (Figma "Search Screen"): titolo 42, barra bianca 63, poi
+     "I tuoi podcast" senza query oppure i risultati dell'iTunes Search API. Tocco su un podcast → dettaglio. -->
+<ContentView x:Class="Canora.Views.PodcastsView"
+			 x:DataType="PodcastsViewModel"
+			 BackgroundColor="{DynamicResource Background}">
+	<ContentView.Resources>
+		<DataTemplate x:Key="PodcastTemplate" x:DataType="Podcast">
+			<PodcastRow>
+				<PodcastRow.GestureRecognizers>
+					<TapGestureRecognizer Command="{Binding OpenCommand, Source={RelativeSource AncestorType={x:Type PodcastsViewModel}}}" CommandParameter="{Binding .}" />
+				</PodcastRow.GestureRecognizers>
+			</PodcastRow>
+		</DataTemplate>
+	</ContentView.Resources>
+
+	<Grid RowDefinitions="Auto,Auto,*" Padding="14,24,14,0">
+		<!-- Windows: campo compatto accanto al titolo (DesktopSearchBox) al posto della barra alta del telefono -->
+		<Grid ColumnDefinitions="Auto,*" ColumnSpacing="24">
+			<Label Text="Podcast" Style="{StaticResource ScreenTitle}" SemanticProperties.HeadingLevel="Level1" VerticalOptions="Center" />
+			<DesktopSearchBox Grid.Column="1" IsVisible="{OnPlatform Default=False, WinUI=True}" MaximumWidthRequest="480" HorizontalOptions="Start" WidthRequest="480" VerticalOptions="Center"
+							  Text="{Binding Query}" Placeholder="Cerca un podcast per titolo" SearchCommand="{Binding SubmitCommand}" />
+		</Grid>
+
+		<Border Grid.Row="1" Margin="0,25,0,0" HeightRequest="63" IsVisible="{OnPlatform Default=True, WinUI=False}" BackgroundColor="{DynamicResource SearchBar}" StrokeThickness="0" StrokeShape="RoundRectangle 6">
+			<Grid ColumnDefinitions="56,*">
+				<Image Source="ic_search_bar.png" WidthRequest="56" HeightRequest="36" Tint.Color="{DynamicResource SearchIcon}" />
+				<Entry Grid.Column="1"
+					   Text="{Binding Query}"
+					   Placeholder="Cerca un podcast per titolo"
+					   PlaceholderColor="{DynamicResource SearchPlaceholder}"
+					   TextColor="{DynamicResource Background}"
+					   FontFamily="MontserratBold"
+					   FontSize="19"
+					   CharacterSpacing="-0.64"
+					   ReturnType="Search"
+					   ReturnCommand="{Binding SubmitCommand}"
+					   ClearButtonVisibility="WhileEditing"
+					   VerticalOptions="Center"
+					   Margin="0,0,8,0" />
+			</Grid>
+		</Border>
+
+		<!-- Senza query: i podcast seguiti -->
+		<ScrollView Grid.Row="2" IsVisible="{Binding IsIdle}" VerticalScrollBarVisibility="Never">
+			<VerticalStackLayout Padding="4,25,0,170" Spacing="19">
+				<Label Text="I tuoi podcast" Style="{StaticResource SubsectionTitle}" Margin="-4,0,0,3" IsVisible="{Binding HasFollowed}" />
+				<VerticalStackLayout BindableLayout.ItemsSource="{Binding Store.Followed}" BindableLayout.ItemTemplate="{StaticResource PodcastTemplate}" Spacing="19" />
+				<VerticalStackLayout IsVisible="{Binding NoFollowed}" Spacing="12" Margin="-4,24,0,0">
+					<Label Text="Cerca un podcast per titolo e tocca Segui: i nuovi episodi compariranno anche in Libreria." Style="{StaticResource Caption}" HorizontalTextAlignment="Center" />
+				</VerticalStackLayout>
+			</VerticalStackLayout>
+		</ScrollView>
+
+		<!-- Con query: risultati -->
+		<CollectionView Grid.Row="2"
+						IsVisible="{Binding HasQuery}"
+						ItemsSource="{Binding Results}"
+						ItemTemplate="{StaticResource PodcastTemplate}"
+						ItemsUpdatingScrollMode="KeepScrollOffset"
+						SelectionMode="None"
+						Margin="4,24,0,0"
+						VerticalScrollBarVisibility="Never">
+			<CollectionView.ItemsLayout>
+				<LinearItemsLayout Orientation="Vertical" ItemSpacing="19" />
+			</CollectionView.ItemsLayout>
+			<CollectionView.Footer>
+				<VerticalStackLayout Padding="0,24,0,170" Spacing="16">
+					<ActivityIndicator IsRunning="{Binding IsSearching}" IsVisible="{Binding IsSearching}" />
+					<Label Text="Nessun podcast trovato" Style="{StaticResource SubsectionTitle}" HorizontalTextAlignment="Center" IsVisible="{Binding NoResults}" />
+					<Label Text="Ricerca non riuscita. Controlla la connessione." Style="{StaticResource Caption}" HorizontalTextAlignment="Center" IsVisible="{Binding SearchFailed}" />
+				</VerticalStackLayout>
+			</CollectionView.Footer>
+		</CollectionView>
+	</Grid>
+</ContentView>

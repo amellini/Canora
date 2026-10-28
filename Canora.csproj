@@ -1,0 +1,89 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<!-- Android e Windows. Per aggiungere iOS: net11.0-ios + Platforms/iOS (Info.plist con UIBackgroundModes=audio). -->
+		<TargetFrameworks>net11.0-android</TargetFrameworks>
+		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net11.0-windows10.0.19041.0</TargetFrameworks>
+
+		<OutputType>Exe</OutputType>
+		<RootNamespace>Canora</RootNamespace>
+		<UseMaui>true</UseMaui>
+		<SingleProject>true</SingleProject>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+
+		<!-- XAML generato a build time: niente inflazione a runtime, ResourceDictionary lazy (MAUI 11),
+		     diagnostica su x:DataType e binding compilati. -->
+		<MauiXamlInflator>SourceGen</MauiXamlInflator>
+		<!-- CoreCLR è già il default in .NET 11; esplicito per non tornare a Mono per sbaglio. -->
+		<UseMonoRuntime>false</UseMonoRuntime>
+
+		<ApplicationTitle>Can'ora</ApplicationTitle>
+		<ApplicationId>com.mellosofy.canora</ApplicationId>
+		<ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+		<ApplicationVersion>1</ApplicationVersion>
+
+		<!-- 26 e non 24 (minimo di .NET 11): MediaElement dichiara UseMauiCommunityToolkitMediaElement solo da Android 26 (CA1416). -->
+		<SupportedOSPlatformVersion Condition="'$([MSBuild]::GetTargetPlatformIdentifier($(TargetFramework)))' == 'android'">26.0</SupportedOSPlatformVersion>
+		<SupportedOSPlatformVersion Condition="'$([MSBuild]::GetTargetPlatformIdentifier($(TargetFramework)))' == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
+		<TargetPlatformMinVersion Condition="'$([MSBuild]::GetTargetPlatformIdentifier($(TargetFramework)))' == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
+		<!-- Windows non pacchettizzato: un .exe da lanciare così com'è, senza MSIX né certificato. -->
+		<WindowsPackageType Condition="'$([MSBuild]::GetTargetPlatformIdentifier($(TargetFramework)))' == 'windows'">None</WindowsPackageType>
+		<!-- Collection expression su IReadOnlyList: CsWinRT avvisa solo per trimming/AOT su Windows, che qui non si usano. -->
+		<NoWarn Condition="'$([MSBuild]::GetTargetPlatformIdentifier($(TargetFramework)))' == 'windows'">$(NoWarn);CsWinRT1032</NoWarn>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" MonochromeFile="Resources\AppIcon\appiconfg.svg" Color="#121212" />
+		<MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#121212" BaseSize="128,128" />
+		<MauiFont Include="Resources\Fonts\*" />
+
+		<!-- Icone esportate dal Figma: maschere nere a 2x, colorate a runtime con Tint.Color. BaseSize = misura in dp nel
+		     design, così Resizetizer genera i bucket di densità invece di trattare il PNG come mdpi e ingrandirlo. -->
+		<MauiImage Include="Resources\Images\*" />
+		<!-- Sorgente di ic_mic.svg: resta qui ma non va nell'app -->
+		<MauiImage Remove="Resources\Images\mic.png" />
+		<MauiImage Update="Resources\Images\ic_nav_home.png;Resources\Images\ic_nav_search.png;Resources\Images\ic_nav_library.png" BaseSize="52,34" />
+		<MauiImage Update="Resources\Images\ic_history.png;Resources\Images\ic_shuffle.png;Resources\Images\ic_repeat.png" BaseSize="30,30" />
+		<MauiImage Update="Resources\Images\ic_settings.png" BaseSize="28,28" />
+		<MauiImage Update="Resources\Images\ic_back.png" BaseSize="25,25" />
+		<MauiImage Update="Resources\Images\ic_chevron_down.png" BaseSize="20,20" />
+		<MauiImage Update="Resources\Images\ic_dots.png" BaseSize="10,24" />
+		<MauiImage Update="Resources\Images\ic_dots_row.png" BaseSize="10,25" />
+		<MauiImage Update="Resources\Images\ic_next.png" BaseSize="24,28" />
+		<MauiImage Update="Resources\Images\ic_pause_circle.png" BaseSize="76,76" />
+		<MauiImage Update="Resources\Images\ic_play_circle.png" BaseSize="60,60" />
+		<MauiImage Update="Resources\Images\ic_search_bar.png" BaseSize="56,36" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- Versioni MAUI/.NET lasciate alle proprietà del workload/SDK: seguono la banda installata da sole. -->
+		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="$(BundledNETCoreAppPackageVersion)" />
+		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+		<!-- Asset net10.0-android36.0, gira su net11 per compatibilità in avanti dei TFM. MAUI 11 non concede più
+		     InternalsVisibleTo al toolkit: l'unico codice di MediaElement 10 che usava API interne (PageExtensions)
+		     non ha chiamanti nella build Android. Passare alla prima versione net11 appena esce. -->
+		<PackageReference Include="CommunityToolkit.Maui.MediaElement" Version="10.0.0" />
+		<!-- Solo per Popup (ActionPopup), come in ChuckWalker che lo usa già su MAUI 11. -->
+		<PackageReference Include="CommunityToolkit.Maui" Version="15.0.1" />
+		<PackageReference Include="YoutubeExplode" Version="6.6.3" />
+		<!-- Playlist e recenti. Come in ChuckWalker: la 1.11 porta da sé SQLitePCLRaw 3 + SourceGear.sqlite3 e non
+		     vuole SQLitePCLRaw.bundle_green (che aggiungerebbe un secondo libe_sqlite3.so e due avvisi NU1903). -->
+		<PackageReference Include="sqlite-net-pcl" Version="1.11.285" />
+	</ItemGroup>
+
+	<!-- Icone dei pulsanti nell'anteprima della taskbar (Platforms/Windows/Taskbar.cs): accanto all'exe, LoadImage
+	     le legge da file. -->
+	<ItemGroup Condition="'$([MSBuild]::GetTargetPlatformIdentifier($(TargetFramework)))' == 'windows'">
+		<Content Include="Platforms\Windows\Taskbar\*.ico" Link="Taskbar\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+	</ItemGroup>
+
+	<!-- Comandi vocali dall'assistente del telefono (Android 16+ AppFunctions): il generatore scrive registrazione,
+	     schema XML e servizio; Hosting.Maui dà UseShiny(). Solo Android, come Platforms/Android/AssistantFunctions.cs. -->
+	<ItemGroup Condition="'$([MSBuild]::GetTargetPlatformIdentifier($(TargetFramework)))' == 'android'">
+		<PackageReference Include="Shiny.Hosting.Maui" Version="6.3.1" />
+		<PackageReference Include="Shiny.AppFunctions" Version="6.3.1" />
+	</ItemGroup>
+
+</Project>

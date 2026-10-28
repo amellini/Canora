@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Stessa anatomia delle righe brano/playlist; il badge PODCAST in verde accento lo distingue dalle playlist
+     in Libreria, e i nuovi episodi sono scritti in verde. -->
+<ContentView x:Class="Canora.Controls.PodcastRow"
+			 x:DataType="Podcast">
+	<Grid ColumnDefinitions="61,*" ColumnSpacing="8" HeightRequest="65">
+		<Grid>
+			<BoxView Fill="{DynamicResource PlaylistCover}" />
+			<Image Source="{Binding ArtworkUrl}" Aspect="AspectFill" />
+		</Grid>
+		<VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="6">
+			<Label Text="{Binding Title}" Style="{StaticResource RowTitle}" />
+			<Grid ColumnDefinitions="Auto,*" ColumnSpacing="4">
+				<Border BackgroundColor="{DynamicResource Accent}" StrokeThickness="0" StrokeShape="RoundRectangle 2" Padding="3,1" VerticalOptions="Center">
+					<Label Text="PODCAST" Style="{StaticResource BadgeText}" />
+				</Border>
+				<Label Grid.Column="1" Text="{Binding Subtitle}" Style="{StaticResource RowArtist}" VerticalOptions="Center">
+					<Label.Triggers>
+						<DataTrigger TargetType="Label" Binding="{Binding HasNew}" Value="True">
+							<Setter Property="TextColor" Value="{DynamicResource Accent}" />
+						</DataTrigger>
+					</Label.Triggers>
+				</Label>
+			</Grid>
+		</VerticalStackLayout>
+	</Grid>
+</ContentView>

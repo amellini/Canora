@@ -1,0 +1,67 @@
+﻿<?xml version="1.0" encoding="UTF-8" ?>
+<!-- Tema "Classico": i token del Figma "Spotify UI Clone (Community)". Ogni tema definisce le stesse chiavi
+     (vedi Themes.cs); le viste le usano con DynamicResource, così il cambio tema è immediato. -->
+<ResourceDictionary x:Class="Canora.Theming.ClassicTheme">
+
+	<Color x:Key="Background">#121212</Color>
+	<Color x:Key="Accent">#4CAF50</Color>
+	<Color x:Key="TextPrimary">#FFFFFF</Color>
+	<!-- Didascalie card Home, descrizione playlist -->
+	<Color x:Key="TextSecondary">#A8A8A8</Color>
+	<!-- Artista nelle righe brano -->
+	<Color x:Key="TextRow">#A7A7A7</Color>
+	<!-- Artista e tempi nel player -->
+	<Color x:Key="TextPlayer">#B8B7B5</Color>
+	<Color x:Key="NavInactive">#B1B7B2</Color>
+	<Color x:Key="Badge">#C4C4C4</Color>
+	<Color x:Key="SearchBar">#F5FFFFFF</Color>
+	<Color x:Key="SearchIcon">#181818</Color>
+	<Color x:Key="SearchPlaceholder">#EB525252</Color>
+	<Color x:Key="SeekRail">#3D3C38</Color>
+	<!-- Binario delle barre di avanzamento sottili (mini-player, episodi) -->
+	<Color x:Key="ProgressTrack">#40FFFFFF</Color>
+	<Color x:Key="Toast">#E6FFFFFF</Color>
+	<!-- Popup (ActionPopup): la superficie dei menu di Spotify, e il velo sulla pagina sotto -->
+	<Color x:Key="Card">#282828</Color>
+	<Color x:Key="Scrim">#99000000</Color>
+
+	<!-- Music Player Screen: #5e5a4f 7% → #35322d 66% → #1d1c1a 112%. Il primo colore arriva dalla copertina,
+	     PlayerAccent vale finché non c'è; PlayerEnd è il fondo del gradiente. -->
+	<Color x:Key="PlayerAccent">#5E5A4F</Color>
+	<Color x:Key="PlayerEnd">#1D1C1A</Color>
+
+	<!-- Tile della ricerca (Search Screen del Figma) -->
+	<Color x:Key="Tile1">#8C67AC</Color>
+	<Color x:Key="Tile2">#8B1932</Color>
+	<Color x:Key="Tile3">#E13300</Color>
+	<Color x:Key="Tile4">#E8125C</Color>
+	<Color x:Key="Tile5">#1E3264</Color>
+	<Color x:Key="Tile6">#477D95</Color>
+
+	<!-- Home Screen: linear-gradient(164deg, rgb(72,76,77) 8%, #121212 36%) -->
+	<LinearGradientBrush x:Key="HomeBackground" StartPoint="0,0" EndPoint="0.28,1">
+		<GradientStop Color="#484C4D" Offset="0.08" />
+		<GradientStop Color="#121212" Offset="0.36" />
+	</LinearGradientBrush>
+
+	<!-- Playlist Screen: linear-gradient(170deg, rgb(82,83,78) 6%, rgb(39,39,37) 46%, #121212 104%) -->
+	<LinearGradientBrush x:Key="LibraryBackground" StartPoint="0.41,0" EndPoint="0.59,1">
+		<GradientStop Color="#52534E" Offset="0.06" />
+		<GradientStop Color="#272725" Offset="0.46" />
+		<GradientStop Color="#121212" Offset="1" />
+	</LinearGradientBrush>
+
+	<!-- Nav Bar: trasparente fino a metà, poi #131313. Qui copre anche il mini-player. -->
+	<LinearGradientBrush x:Key="BottomFade" StartPoint="0,0" EndPoint="0,1">
+		<GradientStop Color="#00121212" Offset="0" />
+		<GradientStop Color="#D9131313" Offset="0.4" />
+		<GradientStop Color="#131313" Offset="0.75" />
+	</LinearGradientBrush>
+
+	<!-- Copertina di una playlist ancora vuota (e segnaposto "crea playlist" in Home) -->
+	<LinearGradientBrush x:Key="PlaylistCover" StartPoint="0,0" EndPoint="1,1">
+		<GradientStop Color="#4CAF50" Offset="0" />
+		<GradientStop Color="#1E3264" Offset="1" />
+	</LinearGradientBrush>
+
+</ResourceDictionary>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Stessa anatomia della riga brano ("Songs Section" della Playlist Screen): copertina 61×65, nome Medium 20,
+     badge con gli ascolti + "12 brani · 45 min". Senza brani: gradiente con il glifo della Libreria. -->
+<ContentView x:Class="Canora.Controls.PlaylistRow"
+			 x:DataType="Playlist">
+	<Grid ColumnDefinitions="61,*" ColumnSpacing="8" HeightRequest="65">
+		<Grid>
+			<BoxView Fill="{DynamicResource PlaylistCover}" />
+			<Image Source="ic_nav_library.png" WidthRequest="31" HeightRequest="20" Style="{StaticResource Icon}" IsVisible="{Binding NoCover}" />
+			<Image Source="{Binding Cover}" Aspect="AspectFill" IsVisible="{Binding HasCover}" />
+		</Grid>
+		<VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="6">
+			<Label Text="{Binding Name}" Style="{StaticResource RowTitle}" />
+			<Grid ColumnDefinitions="Auto,*" ColumnSpacing="4">
+				<Border BackgroundColor="{DynamicResource Badge}" StrokeThickness="0" StrokeShape="RoundRectangle 2" Padding="3,1" VerticalOptions="Center">
+					<Label Text="{Binding PlaysText}" Style="{StaticResource BadgeText}" />
+				</Border>
+				<Label Grid.Column="1" Text="{Binding Summary}" Style="{StaticResource RowArtist}" VerticalOptions="Center" />
+			</Grid>
+		</VerticalStackLayout>
+	</Grid>
+</ContentView>

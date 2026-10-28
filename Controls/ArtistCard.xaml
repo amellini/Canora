@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Artista nei caroselli: foto rotonda come su Spotify, nome sotto. -->
+<ContentView x:Class="Canora.Controls.ArtistCard"
+			 x:DataType="CatalogArtist">
+	<VerticalStackLayout WidthRequest="120" Spacing="8">
+		<Grid WidthRequest="120" HeightRequest="120">
+			<Ellipse Fill="{DynamicResource PlaylistCover}" />
+			<Image Source="{Binding Picture}" Aspect="AspectFill">
+				<Image.Clip>
+					<EllipseGeometry Center="60,60" RadiusX="60" RadiusY="60" />
+				</Image.Clip>
+			</Image>
+		</Grid>
+		<Label Text="{Binding Name}" Style="{StaticResource RowTitle}" FontFamily="MontserratBold" FontSize="15" HorizontalTextAlignment="Center" MaxLines="2" />
+		<Label Text="Artista" Style="{StaticResource RowArtist}" FontSize="13" CharacterSpacing="0" HorizontalTextAlignment="Center" Margin="0,-4,0,0" />
+	</VerticalStackLayout>
+</ContentView>

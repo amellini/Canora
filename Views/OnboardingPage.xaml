@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Presentazione al primo avvio, sul modello di Apple Music ma nello stile dell'app: il nome nella barra bianca della
+     ricerca, i generi come le pillole dei filtri, gli artisti con le foto rotonde delle schede artista, il pulsante
+     pillola bianco della Home. Modale come le Impostazioni; "Salta" e "Fine" chiudono tenendo le scelte fatte. -->
+<ContentPage x:Class="Canora.Views.OnboardingPage"
+			 x:DataType="OnboardingViewModel"
+			 Background="{DynamicResource HomeBackground}"
+			 SafeAreaEdges="None">
+	<ContentPage.Resources>
+		<!-- Artista del genere o trovato con la ricerca: lo stesso tocco sceglie (vedi ToggleArtist) -->
+		<DataTemplate x:Key="ArtistTemplate" x:DataType="ArtistChoice">
+			<VerticalStackLayout Spacing="10" Padding="4,0" SemanticProperties.Description="{Binding Artist.Name}">
+				<Grid WidthRequest="96" HeightRequest="96" HorizontalOptions="Center">
+					<Ellipse Fill="{DynamicResource PlaylistCover}" />
+					<Image Source="{Binding Artist.Picture}" Aspect="AspectFill">
+						<Image.Clip>
+							<EllipseGeometry Center="48,48" RadiusX="48" RadiusY="48" />
+						</Image.Clip>
+					</Image>
+					<!-- Scelto: anello e spunta nel colore d'accento, come il tema in uso nelle Impostazioni -->
+					<Ellipse Stroke="{DynamicResource Accent}" StrokeThickness="4" IsVisible="{Binding IsSelected}" />
+					<Grid WidthRequest="28" HeightRequest="28" HorizontalOptions="End" VerticalOptions="End" IsVisible="{Binding IsSelected}">
+						<Ellipse Fill="{DynamicResource Accent}" />
+						<Path Data="M2,6 L6,10 L14,2" WidthRequest="16" HeightRequest="12" Stroke="{DynamicResource Background}" StrokeThickness="2.5"
+							  StrokeLineCap="Round" StrokeLineJoin="Round" HorizontalOptions="Center" VerticalOptions="Center" />
+					</Grid>
+				</Grid>
+				<Label Text="{Binding Artist.Name}" FontFamily="MontserratBold" FontSize="14" HorizontalTextAlignment="Center" MaxLines="2" LineBreakMode="TailTruncation" />
+				<VerticalStackLayout.GestureRecognizers>
+					<TapGestureRecognizer Command="{Binding ToggleArtistCommand, Source={RelativeSource AncestorType={x:Type OnboardingViewModel}}}" CommandParameter="{Binding .}" />
+				</VerticalStackLayout.GestureRecognizers>
+			</VerticalStackLayout>
+		</DataTemplate>
+	</ContentPage.Resources>
+
+	<!-- Su Windows una colonna da telefono al centro della finestra -->
+	<Grid RowDefinitions="Auto,*,Auto" Padding="0,10,0,0" WidthRequest="{OnPlatform Default=-1, WinUI=560}">
+
+		<!-- Indietro (dal secondo passo) e Salta / Fine -->
+		<Grid ColumnDefinitions="44,*,Auto" MinimumHeightRequest="44" Margin="18,0">
+			<Grid IsVisible="{Binding CanGoBack}" SemanticProperties.Description="Indietro">
+				<!-- La freccia delle schede artista e album: la chevron in basso qui vorrebbe dire "chiudi" -->
+				<Image Source="ic_back.png" WidthRequest="25" HeightRequest="25" Rotation="180" Style="{StaticResource Icon}" HorizontalOptions="Start" VerticalOptions="Center" />
+				<Grid.GestureRecognizers>
+					<TapGestureRecognizer Command="{Binding BackCommand}" />
+				</Grid.GestureRecognizers>
+			</Grid>
+			<Label Grid.Column="2" Text="{Binding SkipText}" FontFamily="MontserratBold" FontSize="15" TextColor="{DynamicResource TextSecondary}" VerticalOptions="Center" Padding="16,10,6,10">
+				<Label.GestureRecognizers>
+					<TapGestureRecognizer Command="{Binding SkipCommand}" />
+				</Label.GestureRecognizers>
+			</Label>
+		</Grid>
+
+		<!-- Il nome: facoltativo, serve solo al saluto della Home -->
+		<VerticalStackLayout Grid.Row="1" IsVisible="{Binding IsNameStep}" Padding="24,32,24,0" Spacing="14">
+			<Image Source="logo.png" WidthRequest="72" HeightRequest="72" HorizontalOptions="Start" Margin="0,0,0,10" />
+			<Label Text="Ciao! Come ti chiami?" Style="{StaticResource ScreenTitle}" SemanticProperties.HeadingLevel="Level1" />
+			<Label Text="Il nome serve solo a salutarti quando apri Can'ora." Style="{StaticResource Description}" />
+			<Border Margin="0,14,0,0" HeightRequest="63" BackgroundColor="{DynamicResource SearchBar}" StrokeThickness="0" StrokeShape="RoundRectangle 6">
+				<Entry x:Name="NameEntry"
+					   Text="{Binding Name}"
+					   Placeholder="Il tuo nome"
+					   PlaceholderColor="{DynamicResource SearchPlaceholder}"
+					   TextColor="{DynamicResource Background}"
+					   FontFamily="MontserratBold"
+					   FontSize="19"
+					   CharacterSpacing="-0.64"
+					   MaxLength="30"
+					   ReturnType="Next"
+					   ReturnCommand="{Binding ContinueCommand}"
+					   ClearButtonVisibility="WhileEditing"
+					   VerticalOptions="Center"
+					   Margin="14,0" />
+			</Border>
+		</VerticalStackLayout>
+
+		<!-- I generi: fino a 5, quelli proposti o cercati -->
+		<ScrollView Grid.Row="1" IsVisible="{Binding IsGenreStep}" VerticalScrollBarVisibility="Never">
+			<VerticalStackLayout Padding="24,32,24,24">
+				<Label Text="Cosa ti piace ascoltare?" Style="{StaticResource ScreenTitle}" SemanticProperties.HeadingLevel="Level1" />
+				<Label Text="Scegline fino a 5. Non c'è il tuo? Cercalo." Style="{StaticResource Description}" Margin="0,12,0,20" />
+
+				<!-- La barra della ricerca, più bassa -->
+				<Border HeightRequest="48" Margin="0,0,0,20" BackgroundColor="{DynamicResource SearchBar}" StrokeThickness="0" StrokeShape="RoundRectangle 6">
+					<Grid ColumnDefinitions="48,*">
+						<Image Source="ic_search_bar.png" WidthRequest="42" HeightRequest="27" Tint.Color="{DynamicResource SearchIcon}" />
+						<Entry Grid.Column="1" Text="{Binding GenreQuery}" Placeholder="Cerca un genere" PlaceholderColor="{DynamicResource SearchPlaceholder}" TextColor="{DynamicResource Background}"
+							   FontFamily="MontserratBold" FontSize="16" ReturnType="Search" ReturnCommand="{Binding AddGenreCommand}" ClearButtonVisibility="WhileEditing"
+							   IsSpellCheckEnabled="False" IsTextPredictionEnabled="False" VerticalOptions="Center" Margin="0,0,8,0" />
+					</Grid>
+				</Border>
+
+				<!-- Nessuna pillola per la ricerca: il genere cercato si aggiunge -->
+				<Border Style="{StaticResource Chip}" Stroke="{DynamicResource Accent}" StrokeShape="RoundRectangle 21" Padding="18,10" HorizontalOptions="Start" Margin="0,0,0,12" IsVisible="{Binding CanAddGenre}">
+					<Label Text="{Binding NewGenreText}" Style="{StaticResource ChipText}" FontSize="15" TextColor="{DynamicResource Accent}" />
+					<Border.GestureRecognizers>
+						<TapGestureRecognizer Command="{Binding AddGenreCommand}" />
+					</Border.GestureRecognizers>
+				</Border>
+
+				<FlexLayout BindableLayout.ItemsSource="{Binding Genres}" Wrap="Wrap" JustifyContent="Start" AlignItems="Start" AlignContent="Start">
+					<BindableLayout.ItemTemplate>
+						<DataTemplate x:DataType="GenreChoice">
+							<!-- Spazio come Padding del contenitore e non Margin: il FlexLayout di WinUI toglie i margini dalla misura -->
+							<ContentView Padding="0,0,10,12" IsVisible="{Binding IsMatch}">
+								<Border Style="{StaticResource Chip}" StrokeShape="RoundRectangle 21" Padding="18,10" SemanticProperties.Description="{Binding Name}">
+									<Border.Triggers>
+										<DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True">
+											<Setter Property="BackgroundColor" Value="{DynamicResource TextPrimary}" />
+											<Setter Property="Stroke" Value="{DynamicResource TextPrimary}" />
+										</DataTrigger>
+										<DataTrigger TargetType="Border" Binding="{Binding IsDimmed}" Value="True">
+											<Setter Property="Opacity" Value="0.35" />
+										</DataTrigger>
+									</Border.Triggers>
+									<Label Text="{Binding Name}" Style="{StaticResource ChipText}" FontSize="15">
+										<Label.Triggers>
+											<DataTrigger TargetType="Label" Binding="{Binding IsSelected}" Value="True">
+												<Setter Property="TextColor" Value="{DynamicResource Background}" />
+											</DataTrigger>
+										</Label.Triggers>
+									</Label>
+									<Border.GestureRecognizers>
+										<TapGestureRecognizer Command="{Binding ToggleGenreCommand, Source={RelativeSource AncestorType={x:Type OnboardingViewModel}}}" CommandParameter="{Binding .}" />
+									</Border.GestureRecognizers>
+								</Border>
+							</ContentView>
+						</DataTemplate>
+					</BindableLayout.ItemTemplate>
+				</FlexLayout>
+			</VerticalStackLayout>
+		</ScrollView>
+
+		<!-- Gli artisti di un genere, quanti si vuole: quelli proposti o cercati -->
+		<Grid Grid.Row="1" IsVisible="{Binding IsArtistStep}" RowDefinitions="Auto,*">
+			<VerticalStackLayout Padding="24,24,24,4">
+				<Label Text="{Binding GenreProgress}" FontFamily="MontserratBold" FontSize="12" CharacterSpacing="1.5" TextColor="{DynamicResource TextSecondary}" />
+				<Label Text="{Binding GenreTitle}" Style="{StaticResource ScreenTitle}" Margin="0,6,0,0" SemanticProperties.HeadingLevel="Level1" />
+				<Label Text="Scegli quelli che ascolti. Manca qualcuno? Cercalo." Style="{StaticResource Description}" Margin="0,12,0,16" />
+				<Border HeightRequest="48" BackgroundColor="{DynamicResource SearchBar}" StrokeThickness="0" StrokeShape="RoundRectangle 6">
+					<Grid ColumnDefinitions="48,*">
+						<Image Source="ic_search_bar.png" WidthRequest="42" HeightRequest="27" Tint.Color="{DynamicResource SearchIcon}" />
+						<Entry Grid.Column="1" Text="{Binding ArtistQuery}" Placeholder="Cerca un artista" PlaceholderColor="{DynamicResource SearchPlaceholder}" TextColor="{DynamicResource Background}"
+							   FontFamily="MontserratBold" FontSize="16" ReturnType="Search" ClearButtonVisibility="WhileEditing"
+							   IsSpellCheckEnabled="False" IsTextPredictionEnabled="False" VerticalOptions="Center" Margin="0,0,8,0" />
+					</Grid>
+				</Border>
+			</VerticalStackLayout>
+
+			<CollectionView Grid.Row="1" ItemsSource="{Binding Artists}" ItemTemplate="{StaticResource ArtistTemplate}" IsVisible="{Binding ShowsGenreArtists}"
+							SelectionMode="None" Margin="12,0" VerticalScrollBarVisibility="Never">
+				<CollectionView.ItemsLayout>
+					<GridItemsLayout Orientation="Vertical" Span="3" VerticalItemSpacing="22" />
+				</CollectionView.ItemsLayout>
+				<CollectionView.Header>
+					<BoxView HeightRequest="20" />
+				</CollectionView.Header>
+				<CollectionView.Footer>
+					<BoxView HeightRequest="16" />
+				</CollectionView.Footer>
+			</CollectionView>
+
+			<CollectionView Grid.Row="1" ItemsSource="{Binding Results}" ItemTemplate="{StaticResource ArtistTemplate}" IsVisible="{Binding IsSearchingArtists}"
+							SelectionMode="None" Margin="12,0" VerticalScrollBarVisibility="Never">
+				<CollectionView.ItemsLayout>
+					<GridItemsLayout Orientation="Vertical" Span="3" VerticalItemSpacing="22" />
+				</CollectionView.ItemsLayout>
+				<CollectionView.Header>
+					<BoxView HeightRequest="20" />
+				</CollectionView.Header>
+				<CollectionView.Footer>
+					<BoxView HeightRequest="16" />
+				</CollectionView.Footer>
+			</CollectionView>
+
+			<ActivityIndicator Grid.Row="1" IsRunning="{Binding IsSearching}" IsVisible="{Binding IsSearching}" VerticalOptions="Start" Margin="0,48,0,0" />
+			<Label Grid.Row="1" Text="{Binding SearchMessage}" IsVisible="{Binding HasSearchMessage}" Style="{StaticResource Caption}" HorizontalTextAlignment="Center" VerticalOptions="Start" Margin="24,48,24,0" />
+
+			<ActivityIndicator Grid.Row="1" IsRunning="{Binding IsLoading}" IsVisible="{Binding IsLoading}" VerticalOptions="Start" Margin="0,48,0,0" />
+			<VerticalStackLayout Grid.Row="1" IsVisible="{Binding LoadFailed}" Spacing="12" VerticalOptions="Start" Margin="24,48,24,0">
+				<Label Text="Impossibile caricare gli artisti. Controlla la connessione." Style="{StaticResource Caption}" HorizontalTextAlignment="Center" />
+				<Border BackgroundColor="{DynamicResource TextPrimary}" StrokeThickness="0" StrokeShape="RoundRectangle 24" Padding="24,10" HorizontalOptions="Center">
+					<Label Text="Riprova" TextColor="{DynamicResource Background}" FontFamily="MontserratBold" FontSize="15" />
+					<Border.GestureRecognizers>
+						<TapGestureRecognizer Command="{Binding RetryCommand}" />
+					</Border.GestureRecognizers>
+				</Border>
+			</VerticalStackLayout>
+		</Grid>
+
+		<!-- Continua / Fine: spento fra i generi finché non se ne sceglie uno -->
+		<Border Grid.Row="2" BackgroundColor="{DynamicResource TextPrimary}" StrokeThickness="0" StrokeShape="RoundRectangle 26" HeightRequest="52" Margin="24,12,24,24">
+			<Border.Triggers>
+				<DataTrigger TargetType="Border" Binding="{Binding CanContinue}" Value="False">
+					<Setter Property="Opacity" Value="0.35" />
+				</DataTrigger>
+			</Border.Triggers>
+			<Label Text="{Binding ContinueText}" TextColor="{DynamicResource Background}" FontFamily="MontserratBold" FontSize="16" HorizontalOptions="Center" VerticalOptions="Center" />
+			<Border.GestureRecognizers>
+				<TapGestureRecognizer Command="{Binding ContinueCommand}" />
+			</Border.GestureRecognizers>
+		</Border>
+	</Grid>
+</ContentPage>

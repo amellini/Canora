@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Figma "Home Screen" (1:2): saluto con icone, poi "Made for you" → Per te, "Trending now" → Ascoltati di recente e
+     "Top picks for you" → Le tue playlist. Copertine da YouTube. -->
+<ContentView x:Class="Canora.Views.HomeView"
+			 x:DataType="LibraryViewModel"
+			 Background="{DynamicResource HomeBackground}">
+	<ContentView.Resources>
+		<!-- Card 173×175 + titolo + "Song . Artista" (Trending now / Top picks) -->
+		<Style x:Key="CardImage" TargetType="Image">
+			<Setter Property="Aspect" Value="AspectFill" />
+			<Setter Property="WidthRequest" Value="173" />
+			<Setter Property="HeightRequest" Value="175" />
+		</Style>
+	</ContentView.Resources>
+
+	<Grid>
+		<ScrollView IsVisible="{Binding HasAny}" VerticalScrollBarVisibility="Never">
+			<VerticalStackLayout Padding="16,24,16,170">
+
+				<!-- Icons: titolo 28 + cronologia, impostazioni (30/28px, passo 58) -->
+				<Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="28" Margin="0,0,0,28">
+					<Label Text="{Binding Greeting}" Style="{StaticResource SectionTitle}" VerticalOptions="Center" SemanticProperties.HeadingLevel="Level1" />
+					<Image Grid.Column="1" Source="ic_history.png" WidthRequest="30" HeightRequest="30" Style="{StaticResource Icon}" SemanticProperties.Description="Ricerche recenti">
+						<Image.GestureRecognizers>
+							<TapGestureRecognizer Tapped="OnSearchTapped" />
+						</Image.GestureRecognizers>
+					</Image>
+					<Image Grid.Column="2" Source="ic_settings.png" WidthRequest="28" HeightRequest="28" Style="{StaticResource Icon}" SemanticProperties.Description="Impostazioni">
+						<Image.GestureRecognizers>
+							<TapGestureRecognizer Command="{Binding SettingsCommand}" />
+						</Image.GestureRecognizers>
+					</Image>
+				</Grid>
+
+				<!-- Per te: la scelta della settimana e 4 compilation (generi della presentazione, poi artisti più ascoltati),
+				     le stesse card di "Ascoltati di recente" -->
+				<Label Text="Per te" Style="{StaticResource SectionTitle}" Margin="0,0,0,21" IsVisible="{Binding HasForYou}" />
+				<CollectionView ItemsSource="{Binding ForYou}" IsVisible="{Binding HasForYou}" HeightRequest="252" Margin="-16,0,-16,44" SelectionMode="None" HorizontalScrollBarVisibility="Never">
+					<CollectionView.ItemsLayout>
+						<LinearItemsLayout Orientation="Horizontal" />
+					</CollectionView.ItemsLayout>
+					<CollectionView.Header>
+						<BoxView WidthRequest="1" />
+					</CollectionView.Header>
+					<CollectionView.Footer>
+						<BoxView WidthRequest="16" />
+					</CollectionView.Footer>
+					<CollectionView.ItemTemplate>
+						<DataTemplate x:DataType="CatalogAlbum">
+							<VerticalStackLayout Padding="15,0,0,0" WidthRequest="188" SemanticProperties.Description="{Binding Title}">
+								<Grid WidthRequest="173" HeightRequest="175">
+									<BoxView Fill="{DynamicResource PlaylistCover}" />
+									<Image Source="{Binding Cover}" Style="{StaticResource CardImage}" />
+								</Grid>
+								<Label Text="{Binding Title}" Style="{StaticResource CardTitle}" Margin="0,18,0,0" />
+								<Label Text="{Binding Artist}" Style="{StaticResource CardSubtitle}" />
+								<VerticalStackLayout.GestureRecognizers>
+									<TapGestureRecognizer Command="{Binding OpenForYouCommand, Source={RelativeSource AncestorType={x:Type LibraryViewModel}}}" CommandParameter="{Binding .}" />
+								</VerticalStackLayout.GestureRecognizers>
+							</VerticalStackLayout>
+						</DataTemplate>
+					</CollectionView.ItemTemplate>
+				</CollectionView>
+
+				<!-- Trending Section → Ascoltati di recente -->
+				<Label Text="Ascoltati di recente" Style="{StaticResource SectionTitle}" Margin="0,0,0,21" IsVisible="{Binding HasRecent}" />
+				<CollectionView ItemsSource="{Binding Library.Recent}" IsVisible="{Binding HasRecent}" HeightRequest="252" Margin="-16,0" SelectionMode="None" HorizontalScrollBarVisibility="Never">
+					<CollectionView.ItemsLayout>
+						<LinearItemsLayout Orientation="Horizontal" />
+					</CollectionView.ItemsLayout>
+					<CollectionView.Header>
+						<BoxView WidthRequest="1" />
+					</CollectionView.Header>
+					<CollectionView.Footer>
+						<BoxView WidthRequest="16" />
+					</CollectionView.Footer>
+					<CollectionView.ItemTemplate>
+						<DataTemplate x:DataType="Track">
+							<VerticalStackLayout Padding="15,0,0,0" WidthRequest="188">
+								<Image Source="{Binding ArtworkUrl}" Style="{StaticResource CardImage}" />
+								<Label Text="{Binding Title}" Style="{StaticResource CardTitle}" Margin="0,18,0,0" />
+								<Label Text="{Binding Artist, StringFormat='Brano · {0}'}" Style="{StaticResource CardSubtitle}" />
+								<VerticalStackLayout.GestureRecognizers>
+									<TapGestureRecognizer Command="{Binding PlayRecentCommand, Source={RelativeSource AncestorType={x:Type LibraryViewModel}}}" CommandParameter="{Binding .}" />
+									<LongPressGestureRecognizer Command="{Binding Player.TrackMenuCommand, Source={RelativeSource AncestorType={x:Type LibraryViewModel}}}" CommandParameter="{Binding .}" />
+								</VerticalStackLayout.GestureRecognizers>
+							</VerticalStackLayout>
+						</DataTemplate>
+					</CollectionView.ItemTemplate>
+				</CollectionView>
+
+				<!-- Top Picks Section → Le tue playlist (stesso ordine della Libreria: ultimo ascolto) -->
+				<Label Text="Le tue playlist" Style="{StaticResource SectionTitle}" Margin="0,44,0,21" IsVisible="{Binding HasPlaylists}" />
+				<CollectionView ItemsSource="{Binding Library.Playlists}" IsVisible="{Binding HasPlaylists}" HeightRequest="252" Margin="-16,0" SelectionMode="None" HorizontalScrollBarVisibility="Never">
+					<CollectionView.ItemsLayout>
+						<LinearItemsLayout Orientation="Horizontal" />
+					</CollectionView.ItemsLayout>
+					<CollectionView.Header>
+						<BoxView WidthRequest="1" />
+					</CollectionView.Header>
+					<CollectionView.Footer>
+						<BoxView WidthRequest="16" />
+					</CollectionView.Footer>
+					<CollectionView.ItemTemplate>
+						<DataTemplate x:DataType="Playlist">
+							<VerticalStackLayout Padding="15,0,0,0" WidthRequest="188">
+								<Grid WidthRequest="173" HeightRequest="175">
+									<BoxView Fill="{DynamicResource PlaylistCover}" />
+									<Image Source="ic_nav_library.png" WidthRequest="62" HeightRequest="41" Style="{StaticResource Icon}" IsVisible="{Binding NoCover}" />
+									<Image Source="{Binding Cover}" Style="{StaticResource CardImage}" IsVisible="{Binding HasCover}" />
+								</Grid>
+								<Label Text="{Binding Name}" Style="{StaticResource CardTitle}" Margin="0,18,0,0" />
+								<Label Text="{Binding TracksText, StringFormat='Playlist · {0}'}" Style="{StaticResource CardSubtitle}" />
+								<VerticalStackLayout.GestureRecognizers>
+									<TapGestureRecognizer Command="{Binding OpenPlaylistCommand, Source={RelativeSource AncestorType={x:Type LibraryViewModel}}}" CommandParameter="{Binding .}" />
+								</VerticalStackLayout.GestureRecognizers>
+							</VerticalStackLayout>
+						</DataTemplate>
+					</CollectionView.ItemTemplate>
+				</CollectionView>
+
+			</VerticalStackLayout>
+		</ScrollView>
+
+		<!-- Primo avvio: niente recenti né playlist -->
+		<VerticalStackLayout IsVisible="{Binding IsEmpty}" VerticalOptions="Center" Padding="32,0,32,120" Spacing="16">
+			<Image Source="logo.png" WidthRequest="72" HeightRequest="72" />
+			<Label Text="{Binding Greeting}" Style="{StaticResource SectionTitle}" HorizontalTextAlignment="Center" />
+			<Label Text="Cerca un artista o un brano: quello che ascolti e le tue playlist compariranno qui." Style="{StaticResource Caption}" HorizontalTextAlignment="Center" />
+			<Border BackgroundColor="{DynamicResource TextPrimary}" StrokeThickness="0" StrokeShape="RoundRectangle 24" Padding="28,12" HorizontalOptions="Center" Margin="0,8,0,0">
+				<Label Text="Cerca" TextColor="{DynamicResource Background}" FontFamily="MontserratBold" FontSize="16" />
+				<Border.GestureRecognizers>
+					<TapGestureRecognizer Tapped="OnSearchTapped" />
+				</Border.GestureRecognizers>
+			</Border>
+		</VerticalStackLayout>
+	</Grid>
+</ContentView>

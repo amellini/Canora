@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Pagina album, come il dettaglio playlist: hero con copertina, titolo e "artista · anno", shuffle e play verde,
+     tracklist. Sopra la pagina artista se aperta da lì (Back torna all'artista). -->
+<ContentView x:Class="Canora.Views.AlbumView"
+			 x:DataType="CatalogViewModel"
+			 Background="{DynamicResource LibraryBackground}">
+	<Grid>
+		<CollectionView ItemsSource="{Binding AlbumTracks}" SelectionMode="None" VerticalScrollBarVisibility="Never">
+			<CollectionView.ItemsLayout>
+				<LinearItemsLayout Orientation="Vertical" ItemSpacing="19" />
+			</CollectionView.ItemsLayout>
+
+			<CollectionView.Header>
+				<VerticalStackLayout Padding="0,0,0,24">
+					<Hero x:Name="AlbumHero" Source="{Binding Album.CoverLarge}" Title="{Binding Album.Title}" Subtitle="{Binding Album.AlbumLine}">
+						<Grid WidthRequest="48" HeightRequest="48" HorizontalOptions="Start" VerticalOptions="Start" Margin="6,6,0,0" SemanticProperties.Description="Indietro">
+							<Image Source="ic_back.png" WidthRequest="25" HeightRequest="25" Rotation="180" Tint.Color="{Binding TopColor, Source={x:Reference AlbumHero}}" />
+							<Grid.GestureRecognizers>
+								<TapGestureRecognizer Command="{Binding BackCommand}" />
+							</Grid.GestureRecognizers>
+						</Grid>
+					</Hero>
+
+					<VerticalStackLayout Padding="18,0">
+						<!-- Buttons: shuffle, "+" (tutto l'album in una playlist), play verde 60 -->
+						<Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="35" HeightRequest="60" Margin="0,16,0,0">
+							<Image Source="ic_shuffle.png" WidthRequest="30" HeightRequest="30" Style="{StaticResource Icon}" SemanticProperties.Description="Riproduzione casuale">
+								<Image.Triggers>
+									<DataTrigger TargetType="Image" Binding="{Binding Player.IsShuffle}" Value="True">
+										<Setter Property="Tint.Color" Value="{DynamicResource Accent}" />
+									</DataTrigger>
+								</Image.Triggers>
+								<Image.GestureRecognizers>
+									<TapGestureRecognizer Command="{Binding Player.ToggleShuffleCommand}" />
+								</Image.GestureRecognizers>
+							</Image>
+							<Image Grid.Column="1" Source="ic_add.png" WidthRequest="30" HeightRequest="30" Style="{StaticResource Icon}" SemanticProperties.Description="Aggiungi l'album a una playlist">
+								<Image.GestureRecognizers>
+									<TapGestureRecognizer Command="{Binding AddAlbumToPlaylistCommand}" />
+								</Image.GestureRecognizers>
+							</Image>
+							<PlayAllButton Grid.Column="3" Items="{Binding AlbumTracks}" Command="{Binding PlayAlbumCommand}" />
+						</Grid>
+						<ActivityIndicator IsRunning="{Binding IsLoadingAlbum}" IsVisible="{Binding IsLoadingAlbum}" Margin="0,24,0,0" />
+						<Label Text="Impossibile caricare l'album. Controlla la connessione." Style="{StaticResource Caption}" HorizontalTextAlignment="Center" Margin="0,24,0,0" IsVisible="{Binding LoadFailed}" />
+					</VerticalStackLayout>
+				</VerticalStackLayout>
+			</CollectionView.Header>
+
+			<CollectionView.ItemTemplate>
+				<DataTemplate x:DataType="Track">
+					<TrackRow Padding="18,0" MenuCommand="{Binding Player.TrackMenuCommand, Source={RelativeSource AncestorType={x:Type CatalogViewModel}}}">
+						<TrackRow.GestureRecognizers>
+							<TapGestureRecognizer Command="{Binding PlayAlbumCommand, Source={RelativeSource AncestorType={x:Type CatalogViewModel}}}" CommandParameter="{Binding .}" />
+							<LongPressGestureRecognizer Command="{Binding Player.TrackMenuCommand, Source={RelativeSource AncestorType={x:Type CatalogViewModel}}}" CommandParameter="{Binding .}" />
+						</TrackRow.GestureRecognizers>
+					</TrackRow>
+				</DataTemplate>
+			</CollectionView.ItemTemplate>
+
+			<CollectionView.Footer>
+				<BoxView HeightRequest="170" />
+			</CollectionView.Footer>
+		</CollectionView>
+	</Grid>
+</ContentView>

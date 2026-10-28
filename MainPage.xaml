@@ -1,0 +1,194 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!-- Pagina radice unica: i quattro tab, il dettaglio podcast, mini-player e Nav Bar del Figma, l'overlay Now Playing
+     e il MediaElement restano vivi per tutta la durata dell'app (con Shell la pagina del player verrebbe smontata e
+     la musica si fermerebbe). -->
+<ContentPage x:Class="Canora.MainPage"
+			 x:DataType="PlayerViewModel"
+			 BackgroundColor="{DynamicResource Background}"
+			 SafeAreaEdges="None">
+	<Grid ColumnDefinitions="Auto,*" SafeAreaEdges="None">
+
+		<!-- Windows: al posto della Nav Bar in basso una barra laterale come la Activity Bar di VS Code. Compressa solo
+		     icone (con tooltip), espansa anche il nome della sezione; il ☰ la alterna e la scelta resta fra un avvio e
+		     l'altro. La voce attiva ha la linea verticale a sinistra. Sfondo Transparent sulle voci: su WinUI un Grid
+		     senza sfondo non riceve i clic fra i figli. -->
+		<Grid x:Name="SideBar" IsVisible="{OnPlatform Default=False, WinUI=True}" WidthRequest="56" ColumnDefinitions="*,1">
+			<VerticalStackLayout>
+				<Grid HeightRequest="48" WidthRequest="56" HorizontalOptions="Start" BackgroundColor="Transparent" ToolTipProperties.Text="Espandi o comprimi" SemanticProperties.Description="Espandi o comprimi la barra laterale">
+					<VerticalStackLayout Spacing="4" HorizontalOptions="Center" VerticalOptions="Center">
+						<BoxView Color="{DynamicResource NavInactive}" WidthRequest="18" HeightRequest="2" />
+						<BoxView Color="{DynamicResource NavInactive}" WidthRequest="18" HeightRequest="2" />
+						<BoxView Color="{DynamicResource NavInactive}" WidthRequest="18" HeightRequest="2" />
+					</VerticalStackLayout>
+					<Grid.GestureRecognizers>
+						<TapGestureRecognizer Tapped="OnSideBarToggleTapped" />
+					</Grid.GestureRecognizers>
+				</Grid>
+				<Grid HeightRequest="48" ColumnDefinitions="56,*" BackgroundColor="Transparent" ToolTipProperties.Text="Home" SemanticProperties.Description="Home">
+					<BoxView x:Name="SideHomeBar" WidthRequest="2" HorizontalOptions="Start" Color="{DynamicResource TextPrimary}" IsVisible="False" />
+					<Image x:Name="SideHomeIcon" Source="ic_nav_home.png" WidthRequest="36" HeightRequest="24" />
+					<Label x:Name="SideHomeLabel" Grid.Column="1" Text="Home" Style="{StaticResource NavLabel}" FontSize="14" HorizontalTextAlignment="Start" VerticalOptions="Center" />
+					<Grid.GestureRecognizers>
+						<TapGestureRecognizer Tapped="OnNavTapped" CommandParameter="0" />
+					</Grid.GestureRecognizers>
+				</Grid>
+				<Grid HeightRequest="48" ColumnDefinitions="56,*" BackgroundColor="Transparent" ToolTipProperties.Text="Cerca" SemanticProperties.Description="Cerca">
+					<BoxView x:Name="SideSearchBar" WidthRequest="2" HorizontalOptions="Start" Color="{DynamicResource TextPrimary}" IsVisible="False" />
+					<Grid WidthRequest="36" HeightRequest="24">
+						<Image x:Name="SideSearchIcon" Source="ic_nav_search.png" />
+						<Ellipse x:Name="SideSearchLens" Fill="{DynamicResource TextPrimary}" WidthRequest="9" HeightRequest="9" HorizontalOptions="Start" VerticalOptions="Start" Margin="12,5,0,0" IsVisible="False" />
+					</Grid>
+					<Label x:Name="SideSearchLabel" Grid.Column="1" Text="Cerca" Style="{StaticResource NavLabel}" FontSize="14" HorizontalTextAlignment="Start" VerticalOptions="Center" />
+					<Grid.GestureRecognizers>
+						<TapGestureRecognizer Tapped="OnNavTapped" CommandParameter="1" />
+					</Grid.GestureRecognizers>
+				</Grid>
+				<Grid HeightRequest="48" ColumnDefinitions="56,*" BackgroundColor="Transparent" ToolTipProperties.Text="Podcast" SemanticProperties.Description="Podcast">
+					<BoxView x:Name="SidePodcastBar" WidthRequest="2" HorizontalOptions="Start" Color="{DynamicResource TextPrimary}" IsVisible="False" />
+					<Image x:Name="SidePodcastIcon" Source="ic_nav_podcast.png" WidthRequest="36" HeightRequest="24" />
+					<Label x:Name="SidePodcastLabel" Grid.Column="1" Text="Podcast" Style="{StaticResource NavLabel}" FontSize="14" HorizontalTextAlignment="Start" VerticalOptions="Center" />
+					<Grid.GestureRecognizers>
+						<TapGestureRecognizer Tapped="OnNavTapped" CommandParameter="2" />
+					</Grid.GestureRecognizers>
+				</Grid>
+				<Grid HeightRequest="48" ColumnDefinitions="56,*" BackgroundColor="Transparent" ToolTipProperties.Text="La tua libreria" SemanticProperties.Description="La tua libreria">
+					<BoxView x:Name="SideLibraryBar" WidthRequest="2" HorizontalOptions="Start" Color="{DynamicResource TextPrimary}" IsVisible="False" />
+					<Image x:Name="SideLibraryIcon" Source="ic_nav_library.png" WidthRequest="36" HeightRequest="24" />
+					<Label x:Name="SideLibraryLabel" Grid.Column="1" Text="La tua libreria" Style="{StaticResource NavLabel}" FontSize="14" HorizontalTextAlignment="Start" VerticalOptions="Center" />
+					<Grid.GestureRecognizers>
+						<TapGestureRecognizer Tapped="OnNavTapped" CommandParameter="3" />
+					</Grid.GestureRecognizers>
+				</Grid>
+			</VerticalStackLayout>
+			<BoxView Grid.Column="1" Color="{DynamicResource SeekRail}" />
+		</Grid>
+
+		<Grid Grid.Column="1" SafeAreaEdges="None">
+
+			<HomeView x:Name="Home" />
+			<SearchView x:Name="Search" IsVisible="False" />
+			<PodcastsView x:Name="Podcasts" IsVisible="False" />
+			<LibraryView x:Name="Library" IsVisible="False" />
+
+			<!-- Dettaglio podcast: sopra qualunque tab l'abbia aperto (Podcast o Libreria), sotto mini-player e nav -->
+			<PodcastDetailView x:Name="PodcastDetail" x:DataType="PodcastsViewModel" IsVisible="{Binding IsDetailOpen}" />
+
+			<!-- Artista e album del catalogo (dalla ricerca), allo stesso livello del dettaglio podcast -->
+			<ArtistView x:Name="ArtistDetail" x:DataType="CatalogViewModel" IsVisible="{Binding IsArtistVisible}" />
+			<AlbumView x:Name="AlbumDetail" x:DataType="CatalogViewModel" IsVisible="{Binding IsAlbumVisible}" />
+
+			<!-- Nav Bar Bottom: sfumatura da trasparente a #131313, sopra il mini-player -->
+			<VerticalStackLayout VerticalOptions="End" Background="{DynamicResource BottomFade}" Padding="0,28,0,0" SafeAreaEdges="None">
+
+				<!-- Mini-player (non nel Figma): colore della copertina, come Spotify -->
+				<Border IsVisible="{Binding HasTrack}" Margin="8,0,8,6" Padding="8,8,8,4" StrokeThickness="0" StrokeShape="RoundRectangle 6" BackgroundColor="{Binding AccentDeep}">
+					<Grid ColumnDefinitions="40,*,Auto,40,32,40,32" RowDefinitions="40,Auto" ColumnSpacing="8">
+						<Image Source="{Binding Current.ThumbUrl}" Aspect="AspectFill">
+							<Image.Clip>
+								<RoundRectangleGeometry Rect="0,0,40,40" CornerRadius="4" />
+							</Image.Clip>
+						</Image>
+						<VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="1" Margin="4,0,0,0">
+							<Label Text="{Binding Current.Title}" Style="{StaticResource MiniTitle}" />
+							<Label Text="{Binding Current.Artist}" Style="{StaticResource MiniArtist}" />
+						</VerticalStackLayout>
+						<!-- Windows: volume (lo stesso del player espanso, salvato fra un avvio e l'altro) -->
+						<HorizontalStackLayout Grid.Column="2" IsVisible="{OnPlatform Default=False, WinUI=True}" Spacing="8" VerticalOptions="Center" Margin="0,0,12,0">
+							<Label Text="&#xE767;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" TextColor="{DynamicResource TextPrimary}" VerticalOptions="Center" />
+							<Slider Value="{Binding Volume}" Minimum="0" Maximum="1" WidthRequest="120" VerticalOptions="Center"
+									MinimumTrackColor="{DynamicResource TextPrimary}" MaximumTrackColor="{DynamicResource ProgressTrack}" ThumbColor="{DynamicResource TextPrimary}"
+									SemanticProperties.Description="Volume" />
+						</HorizontalStackLayout>
+						<Grid Grid.Column="3" IsVisible="{Binding CanAddToPlaylist}" SemanticProperties.Description="Aggiungi a playlist">
+							<Image Source="ic_add.png" WidthRequest="24" HeightRequest="24" Style="{StaticResource Icon}" />
+							<Grid.GestureRecognizers>
+								<TapGestureRecognizer Command="{Binding AddToPlaylistCommand}" />
+							</Grid.GestureRecognizers>
+						</Grid>
+						<!-- Precedente e successivo ai lati del play, come nel player espanso -->
+						<Grid Grid.Column="4" SemanticProperties.Description="Precedente">
+							<Image Source="ic_next.png" WidthRequest="18" HeightRequest="21" ScaleX="-1" Style="{StaticResource Icon}" />
+							<Grid.GestureRecognizers>
+								<TapGestureRecognizer Command="{Binding PreviousCommand}" />
+							</Grid.GestureRecognizers>
+						</Grid>
+						<Grid Grid.Column="6" SemanticProperties.Description="Successivo">
+							<Image Source="ic_next.png" WidthRequest="18" HeightRequest="21" Style="{StaticResource Icon}" />
+							<Grid.GestureRecognizers>
+								<TapGestureRecognizer Command="{Binding NextCommand}" />
+							</Grid.GestureRecognizers>
+						</Grid>
+						<Grid Grid.Column="5" SemanticProperties.Description="Riproduci o metti in pausa">
+							<Image Source="ic_play_circle.png" WidthRequest="32" HeightRequest="32" Style="{StaticResource Icon}">
+								<Image.Triggers>
+									<DataTrigger TargetType="Image" Binding="{Binding IsPlaying}" Value="True">
+										<Setter Property="Source" Value="ic_pause_circle.png" />
+									</DataTrigger>
+								</Image.Triggers>
+							</Image>
+							<Ellipse Fill="{DynamicResource TextPrimary}" WidthRequest="32" HeightRequest="32" IsVisible="{Binding IsLoading}" />
+							<ActivityIndicator Color="{DynamicResource Background}" IsRunning="{Binding IsLoading}" IsVisible="{Binding IsLoading}" WidthRequest="18" HeightRequest="18" />
+							<Grid.GestureRecognizers>
+								<TapGestureRecognizer Command="{Binding TogglePlayCommand}" />
+							</Grid.GestureRecognizers>
+						</Grid>
+						<!-- Avanzamento: linea da 2px sul fondo della card (ScaleX ancorato a sinistra = percentuale) -->
+						<Grid Grid.Row="1" Grid.ColumnSpan="7" HeightRequest="2" Margin="0,8,0,0">
+							<BoxView Color="{DynamicResource ProgressTrack}" CornerRadius="1" />
+							<BoxView Color="{DynamicResource TextPrimary}" CornerRadius="1" AnchorX="0" ScaleX="{Binding Progress}" />
+						</Grid>
+					</Grid>
+					<Border.GestureRecognizers>
+						<TapGestureRecognizer Tapped="OnMiniPlayerTapped" />
+					</Border.GestureRecognizers>
+				</Border>
+
+				<!-- Nav: icona 52×34 + etichetta Book 12; attivo bianco, inattivo #B1B7B2. Quattro posti come nel Figma:
+				     "Premium" è diventato Podcast. -->
+				<Grid ColumnDefinitions="*,*,*,*" Padding="0,6,0,8" IsVisible="{OnPlatform Default=True, WinUI=False}">
+					<VerticalStackLayout Spacing="3" SemanticProperties.Description="Home">
+						<Image x:Name="NavHomeIcon" Source="ic_nav_home.png" WidthRequest="52" HeightRequest="34" />
+						<Label x:Name="NavHomeLabel" Text="Home" Style="{StaticResource NavLabel}" />
+						<VerticalStackLayout.GestureRecognizers>
+							<TapGestureRecognizer Tapped="OnNavTapped" CommandParameter="0" />
+						</VerticalStackLayout.GestureRecognizers>
+					</VerticalStackLayout>
+					<VerticalStackLayout Grid.Column="1" Spacing="3" SemanticProperties.Description="Cerca">
+						<Grid WidthRequest="52" HeightRequest="34">
+							<Image x:Name="NavSearchIcon" Source="ic_nav_search.png" />
+							<!-- Ellipse 1 del Figma: la lente piena quando il tab è attivo -->
+							<Ellipse x:Name="NavSearchLens" Fill="{DynamicResource TextPrimary}" WidthRequest="13" HeightRequest="13" HorizontalOptions="Start" VerticalOptions="Start" Margin="17,8,0,0" IsVisible="False" />
+						</Grid>
+						<Label x:Name="NavSearchLabel" Text="Cerca" Style="{StaticResource NavLabel}" />
+						<VerticalStackLayout.GestureRecognizers>
+							<TapGestureRecognizer Tapped="OnNavTapped" CommandParameter="1" />
+						</VerticalStackLayout.GestureRecognizers>
+					</VerticalStackLayout>
+					<VerticalStackLayout Grid.Column="2" Spacing="3" SemanticProperties.Description="Podcast">
+						<Image x:Name="NavPodcastIcon" Source="ic_nav_podcast.png" WidthRequest="52" HeightRequest="34" />
+						<Label x:Name="NavPodcastLabel" Text="Podcast" Style="{StaticResource NavLabel}" />
+						<VerticalStackLayout.GestureRecognizers>
+							<TapGestureRecognizer Tapped="OnNavTapped" CommandParameter="2" />
+						</VerticalStackLayout.GestureRecognizers>
+					</VerticalStackLayout>
+					<VerticalStackLayout Grid.Column="3" Spacing="3" SemanticProperties.Description="La tua libreria">
+						<Image x:Name="NavLibraryIcon" Source="ic_nav_library.png" WidthRequest="52" HeightRequest="34" />
+						<Label x:Name="NavLibraryLabel" Text="La tua libreria" Style="{StaticResource NavLabel}" />
+						<VerticalStackLayout.GestureRecognizers>
+							<TapGestureRecognizer Tapped="OnNavTapped" CommandParameter="3" />
+						</VerticalStackLayout.GestureRecognizers>
+					</VerticalStackLayout>
+				</Grid>
+			</VerticalStackLayout>
+
+			<NowPlayingView x:Name="NowPlaying" IsVisible="False" />
+
+			<Border x:Name="ToastView" IsVisible="False" Opacity="0" VerticalOptions="End" HorizontalOptions="Center" Margin="24,0,24,170" Padding="16,10" BackgroundColor="{DynamicResource Toast}" StrokeThickness="0" StrokeShape="RoundRectangle 8" InputTransparent="True">
+				<Label x:Name="ToastText" TextColor="{DynamicResource Background}" FontFamily="MontserratMedium" FontSize="14" HorizontalTextAlignment="Center" />
+			</Border>
+
+			<!-- Solo audio: nessuna superficie video da mostrare, ma deve stare nel visual tree. -->
+			<MediaElement x:Name="Media" ShouldAutoPlay="True" IsVisible="False" />
+		</Grid>
+	</Grid>
+</ContentPage>

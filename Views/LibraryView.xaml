@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Tab Libreria. Elenco: titolo come il tab Cerca, righe playlist come le righe brano, ordinate per ultimo ascolto.
+     Dettaglio: Figma "Playlist Screen" (15:80) — hero con back, nome e "brani · durata" sopra la copertina, ascolti,
+     cuore → shuffle, ⋮ → rinomina/elimina, play verde 60, righe brano. -->
+<ContentView x:Class="Canora.Views.LibraryView"
+			 x:DataType="LibraryViewModel"
+			 Background="{DynamicResource LibraryBackground}">
+	<!-- Le Grid (layout → SafeAreaEdges Container) tengono il contenuto sotto la status bar; il gradiente resta a tutto schermo. -->
+	<Grid>
+
+		<!-- ELENCO -->
+		<Grid IsVisible="{Binding IsListOpen}" RowDefinitions="Auto,*" Padding="18,24,18,0">
+			<Grid ColumnDefinitions="*,Auto">
+				<Label Text="Libreria" Style="{StaticResource ScreenTitle}" SemanticProperties.HeadingLevel="Level1" />
+				<Image Grid.Column="1" Source="ic_add.png" WidthRequest="30" HeightRequest="30" Style="{StaticResource Icon}" VerticalOptions="Center" SemanticProperties.Description="Nuova playlist">
+					<Image.GestureRecognizers>
+						<TapGestureRecognizer Command="{Binding CreatePlaylistCommand}" />
+					</Image.GestureRecognizers>
+				</Image>
+			</Grid>
+			<!-- Playlist e podcast seguiti insieme, per ultimo ascolto; il podcast si riconosce dal badge PODCAST -->
+			<CollectionView Grid.Row="1" ItemsSource="{Binding Items}" SelectionMode="None" Margin="0,25,0,0" VerticalScrollBarVisibility="Never">
+				<CollectionView.ItemsLayout>
+					<LinearItemsLayout Orientation="Vertical" ItemSpacing="19" />
+				</CollectionView.ItemsLayout>
+				<CollectionView.ItemTemplate>
+					<LibraryTemplateSelector>
+						<LibraryTemplateSelector.PlaylistTemplate>
+							<DataTemplate x:DataType="Playlist">
+								<PlaylistRow>
+									<PlaylistRow.GestureRecognizers>
+										<TapGestureRecognizer Command="{Binding OpenPlaylistCommand, Source={RelativeSource AncestorType={x:Type LibraryViewModel}}}" CommandParameter="{Binding .}" />
+										<LongPressGestureRecognizer Command="{Binding PlaylistMenuCommand, Source={RelativeSource AncestorType={x:Type LibraryViewModel}}}" CommandParameter="{Binding .}" />
+									</PlaylistRow.GestureRecognizers>
+								</PlaylistRow>
+							</DataTemplate>
+						</LibraryTemplateSelector.PlaylistTemplate>
+						<LibraryTemplateSelector.PodcastTemplate>
+							<DataTemplate x:DataType="Podcast">
+								<PodcastRow>
+									<PodcastRow.GestureRecognizers>
+										<TapGestureRecognizer Command="{Binding Podcasts.OpenCommand, Source={RelativeSource AncestorType={x:Type LibraryViewModel}}}" CommandParameter="{Binding .}" />
+									</PodcastRow.GestureRecognizers>
+								</PodcastRow>
+							</DataTemplate>
+						</LibraryTemplateSelector.PodcastTemplate>
+					</LibraryTemplateSelector>
+				</CollectionView.ItemTemplate>
+				<CollectionView.EmptyView>
+					<ContentView>
+						<VerticalStackLayout Spacing="16" Padding="16,48,16,0">
+							<Label Text="Crea la tua prima playlist" Style="{StaticResource SubsectionTitle}" HorizontalTextAlignment="Center" />
+							<Label Text="Oppure tocca + mentre ascolti un brano, o segui un podcast dal tab Podcast." Style="{StaticResource Caption}" HorizontalTextAlignment="Center" />
+							<Border BackgroundColor="{DynamicResource TextPrimary}" StrokeThickness="0" StrokeShape="RoundRectangle 24" Padding="28,12" HorizontalOptions="Center" Margin="0,8,0,0">
+								<Label Text="Nuova playlist" TextColor="{DynamicResource Background}" FontFamily="MontserratBold" FontSize="16" />
+								<Border.GestureRecognizers>
+									<TapGestureRecognizer Command="{Binding CreatePlaylistCommand}" />
+								</Border.GestureRecognizers>
+							</Border>
+						</VerticalStackLayout>
+					</ContentView>
+				</CollectionView.EmptyView>
+				<CollectionView.Footer>
+					<BoxView HeightRequest="170" />
+				</CollectionView.Footer>
+			</CollectionView>
+		</Grid>
+
+		<!-- DETTAGLIO (Playlist Screen) -->
+		<Grid IsVisible="{Binding IsDetailOpen}">
+			<!-- Niente margine laterale sulla lista: l'hero va da bordo a bordo, il resto ha il suo -->
+			<CollectionView ItemsSource="{Binding Selected.Tracks}" SelectionMode="None" VerticalScrollBarVisibility="Never">
+				<CollectionView.ItemsLayout>
+					<LinearItemsLayout Orientation="Vertical" ItemSpacing="19" />
+				</CollectionView.ItemsLayout>
+
+				<CollectionView.Header>
+					<VerticalStackLayout Padding="0,0,0,30">
+						<!-- Senza copertina (playlist vuota): il gradiente dell'hero con l'icona della libreria -->
+						<Hero x:Name="PlaylistHero" Source="{Binding Selected.Cover}" Title="{Binding Selected.Name}" Subtitle="{Binding Selected.Summary}" RenameCommand="{Binding RenameCommand}">
+							<Image Source="ic_nav_library.png" WidthRequest="78" HeightRequest="51" Style="{StaticResource Icon}" IsVisible="{Binding Selected.NoCover}" />
+							<Grid WidthRequest="48" HeightRequest="48" HorizontalOptions="Start" VerticalOptions="Start" Margin="6,6,0,0" SemanticProperties.Description="Indietro">
+								<Image Source="ic_back.png" WidthRequest="25" HeightRequest="25" Rotation="180" Tint.Color="{Binding TopColor, Source={x:Reference PlaylistHero}}" />
+								<Grid.GestureRecognizers>
+									<TapGestureRecognizer Command="{Binding ClosePlaylistCommand}" />
+								</Grid.GestureRecognizers>
+							</Grid>
+						</Hero>
+
+						<VerticalStackLayout Padding="18,0">
+							<!-- "191,165 likes" → ascolti (brani e durata sono già nell'hero) -->
+							<Label Text="{Binding Selected.PlaysText}" Style="{StaticResource Description}" Margin="0,16,0,0" />
+
+							<!-- Buttons: shuffle (al posto del cuore), cestino (al posto del ⋮, rinomina è la matita nell'hero), play verde 60 -->
+							<Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="35" HeightRequest="60" Margin="0,8,0,0">
+								<Image Source="ic_shuffle.png" WidthRequest="30" HeightRequest="30" Style="{StaticResource Icon}" SemanticProperties.Description="Riproduzione casuale">
+									<Image.Triggers>
+										<DataTrigger TargetType="Image" Binding="{Binding Player.IsShuffle}" Value="True">
+											<Setter Property="Tint.Color" Value="{DynamicResource Accent}" />
+										</DataTrigger>
+									</Image.Triggers>
+									<Image.GestureRecognizers>
+										<TapGestureRecognizer Command="{Binding Player.ToggleShuffleCommand}" />
+									</Image.GestureRecognizers>
+								</Image>
+								<Grid Grid.Column="1" WidthRequest="40" SemanticProperties.Description="Elimina playlist">
+									<Image Source="ic_delete.png" WidthRequest="28" HeightRequest="28" Style="{StaticResource Icon}" />
+									<Grid.GestureRecognizers>
+										<TapGestureRecognizer Command="{Binding DeletePlaylistCommand}" />
+									</Grid.GestureRecognizers>
+								</Grid>
+								<PlayAllButton Grid.Column="3" Items="{Binding Selected.Tracks}" Command="{Binding PlayPlaylistCommand}" />
+							</Grid>
+
+							<Label Text="Ancora vuota: tocca + mentre ascolti, o usa ⋮ sui risultati della ricerca." Style="{StaticResource Caption}" HorizontalTextAlignment="Center" Margin="0,40,0,0" IsVisible="{Binding Selected.NoCover}" />
+						</VerticalStackLayout>
+					</VerticalStackLayout>
+				</CollectionView.Header>
+
+				<CollectionView.ItemTemplate>
+					<DataTemplate x:DataType="Track">
+						<TrackRow Padding="18,0" MenuCommand="{Binding TrackMenuCommand, Source={RelativeSource AncestorType={x:Type LibraryViewModel}}}">
+							<TrackRow.GestureRecognizers>
+								<TapGestureRecognizer Command="{Binding PlayFromPlaylistCommand, Source={RelativeSource AncestorType={x:Type LibraryViewModel}}}" CommandParameter="{Binding .}" />
+								<LongPressGestureRecognizer Command="{Binding TrackMenuCommand, Source={RelativeSource AncestorType={x:Type LibraryViewModel}}}" CommandParameter="{Binding .}" />
+							</TrackRow.GestureRecognizers>
+						</TrackRow>
+					</DataTemplate>
+				</CollectionView.ItemTemplate>
+
+				<CollectionView.Footer>
+					<BoxView HeightRequest="170" />
+				</CollectionView.Footer>
+			</CollectionView>
+		</Grid>
+	</Grid>
+</ContentView>

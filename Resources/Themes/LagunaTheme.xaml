@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- Tema "Laguna": indaco #222E50, petrolio #007991, verde mare #439A86, grigio caldo #DEDBD8, zafferano #F5B841.
+     Fondo indaco scurito, accento zafferano, testi nel grigio caldo, gradienti dal petrolio all'indaco.
+     Stesse chiavi di ClassicTheme. -->
+<ResourceDictionary x:Class="Canora.Theming.LagunaTheme">
+
+	<Color x:Key="Background">#121A2E</Color>
+	<Color x:Key="Accent">#F5B841</Color>
+	<Color x:Key="TextPrimary">#F4F2EF</Color>
+	<Color x:Key="TextSecondary">#B9B6B2</Color>
+	<Color x:Key="TextRow">#B3B0AC</Color>
+	<Color x:Key="TextPlayer">#C6C3BF</Color>
+	<Color x:Key="NavInactive">#A9A6A2</Color>
+	<Color x:Key="Badge">#DEDBD8</Color>
+	<Color x:Key="SearchBar">#F5F4F2EF</Color>
+	<Color x:Key="SearchIcon">#121A2E</Color>
+	<Color x:Key="SearchPlaceholder">#EB5C6378</Color>
+	<Color x:Key="SeekRail">#2E3A5C</Color>
+	<Color x:Key="ProgressTrack">#40DEDBD8</Color>
+	<Color x:Key="Toast">#E6F4F2EF</Color>
+	<Color x:Key="Card">#1F2A48</Color>
+	<Color x:Key="Scrim">#99050A16</Color>
+
+	<Color x:Key="PlayerAccent">#007991</Color>
+	<Color x:Key="PlayerEnd">#0E1424</Color>
+
+	<Color x:Key="Tile1">#007991</Color>
+	<Color x:Key="Tile2">#2C3B66</Color>
+	<Color x:Key="Tile3">#C8891B</Color>
+	<Color x:Key="Tile4">#439A86</Color>
+	<Color x:Key="Tile5">#1F5F73</Color>
+	<Color x:Key="Tile6">#6E7A8A</Color>
+
+	<LinearGradientBrush x:Key="HomeBackground" StartPoint="0,0" EndPoint="0.28,1">
+		<GradientStop Color="#007991" Offset="0.08" />
+		<GradientStop Color="#121A2E" Offset="0.36" />
+	</LinearGradientBrush>
+
+	<LinearGradientBrush x:Key="LibraryBackground" StartPoint="0.41,0" EndPoint="0.59,1">
+		<GradientStop Color="#1F5F73" Offset="0.06" />
+		<GradientStop Color="#18263F" Offset="0.46" />
+		<GradientStop Color="#121A2E" Offset="1" />
+	</LinearGradientBrush>
+
+	<LinearGradientBrush x:Key="BottomFade" StartPoint="0,0" EndPoint="0,1">
+		<GradientStop Color="#00121A2E" Offset="0" />
+		<GradientStop Color="#D9111828" Offset="0.4" />
+		<GradientStop Color="#111828" Offset="0.75" />
+	</LinearGradientBrush>
+
+	<LinearGradientBrush x:Key="PlaylistCover" StartPoint="0,0" EndPoint="1,1">
+		<GradientStop Color="#F5B841" Offset="0" />
+		<GradientStop Color="#007991" Offset="1" />
+	</LinearGradientBrush>
+
+</ResourceDictionary>

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- Tema "Cobalt sky": cobalto #0047AB, navy #000080, cielo #82C8E5, ardesia #6D8196.
+     Fondo navy quasi nero, accento cielo (leggibile sul fondo e con testo scuro sopra), grigi tirati verso l'ardesia,
+     gradienti dal cobalto alla notte. Stesse chiavi di ClassicTheme. -->
+<ResourceDictionary x:Class="Canora.Theming.CobaltSkyTheme">
+
+	<Color x:Key="Background">#0A0F24</Color>
+	<Color x:Key="Accent">#82C8E5</Color>
+	<Color x:Key="TextPrimary">#F4F7FC</Color>
+	<Color x:Key="TextSecondary">#A9B8CC</Color>
+	<Color x:Key="TextRow">#9DAEC4</Color>
+	<Color x:Key="TextPlayer">#B4C2D4</Color>
+	<Color x:Key="NavInactive">#8C9DB5</Color>
+	<Color x:Key="Badge">#B7C7DA</Color>
+	<Color x:Key="SearchBar">#F5EEF4FB</Color>
+	<Color x:Key="SearchIcon">#0A0F24</Color>
+	<Color x:Key="SearchPlaceholder">#EB4A5A75</Color>
+	<Color x:Key="SeekRail">#2A3657</Color>
+	<Color x:Key="ProgressTrack">#40B7C7DA</Color>
+	<Color x:Key="Toast">#E6E3EEF9</Color>
+	<Color x:Key="Card">#162048</Color>
+	<Color x:Key="Scrim">#99000014</Color>
+
+	<Color x:Key="PlayerAccent">#2B4F86</Color>
+	<Color x:Key="PlayerEnd">#0B0F22</Color>
+
+	<Color x:Key="Tile1">#0047AB</Color>
+	<Color x:Key="Tile2">#000080</Color>
+	<Color x:Key="Tile3">#2F6FD0</Color>
+	<Color x:Key="Tile4">#4B3FA8</Color>
+	<Color x:Key="Tile5">#1B2F5E</Color>
+	<Color x:Key="Tile6">#6D8196</Color>
+
+	<!-- Crepuscolo: cobalto in alto che sfuma nella notte -->
+	<LinearGradientBrush x:Key="HomeBackground" StartPoint="0,0" EndPoint="0.28,1">
+		<GradientStop Color="#0047AB" Offset="0.08" />
+		<GradientStop Color="#0A0F24" Offset="0.36" />
+	</LinearGradientBrush>
+
+	<LinearGradientBrush x:Key="LibraryBackground" StartPoint="0.41,0" EndPoint="0.59,1">
+		<GradientStop Color="#3A5A8C" Offset="0.06" />
+		<GradientStop Color="#141B4A" Offset="0.46" />
+		<GradientStop Color="#0A0F24" Offset="1" />
+	</LinearGradientBrush>
+
+	<LinearGradientBrush x:Key="BottomFade" StartPoint="0,0" EndPoint="0,1">
+		<GradientStop Color="#000A0F24" Offset="0" />
+		<GradientStop Color="#D90B1128" Offset="0.4" />
+		<GradientStop Color="#0B1128" Offset="0.75" />
+	</LinearGradientBrush>
+
+	<LinearGradientBrush x:Key="PlaylistCover" StartPoint="0,0" EndPoint="1,1">
+		<GradientStop Color="#82C8E5" Offset="0" />
+		<GradientStop Color="#000080" Offset="1" />
+	</LinearGradientBrush>
+
+</ResourceDictionary>

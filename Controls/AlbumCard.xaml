@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Album nei caroselli: copertina quadrata, titolo e una riga di contesto (Caption: "Album · Artista" nella ricerca,
+     "2001 · Album" nella pagina dell'artista). -->
+<ContentView x:Class="Canora.Controls.AlbumCard"
+			 x:DataType="CatalogAlbum">
+	<VerticalStackLayout WidthRequest="140" Spacing="6">
+		<Grid WidthRequest="140" HeightRequest="140">
+			<BoxView Fill="{DynamicResource PlaylistCover}" />
+			<Image Source="{Binding Cover}" Aspect="AspectFill" />
+		</Grid>
+		<Label Text="{Binding Title}" Style="{StaticResource RowTitle}" FontFamily="MontserratBold" FontSize="15" MaxLines="2" Margin="0,4,0,0" />
+		<Label Text="{Binding Caption}" Style="{StaticResource RowArtist}" FontSize="13" CharacterSpacing="0" />
+	</VerticalStackLayout>
+</ContentView>

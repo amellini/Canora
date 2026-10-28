@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Pagina modale "Aggiungi alla playlist": stesso sfondo della Playlist Screen, intestazione come il player,
+     pulsante pillola bianco come quello della Home, righe playlist come in Libreria. -->
+<ContentPage x:Class="Canora.Views.PlaylistPickerPage"
+			 x:DataType="LibraryStore"
+			 Background="{DynamicResource LibraryBackground}"
+			 SafeAreaEdges="None">
+	<Grid RowDefinitions="Auto,Auto,*" Padding="18,10,18,0">
+
+		<!-- Top info, come nel Music Player Screen: chevron per chiudere, titolo centrato -->
+		<Grid ColumnDefinitions="44,*,44" MinimumHeightRequest="44">
+			<Grid SemanticProperties.Description="Chiudi">
+				<Image Source="ic_chevron_down.png" WidthRequest="20" HeightRequest="20" Rotation="90" Style="{StaticResource Icon}" HorizontalOptions="Start" VerticalOptions="Center" />
+				<Grid.GestureRecognizers>
+					<TapGestureRecognizer Tapped="OnCloseTapped" />
+				</Grid.GestureRecognizers>
+			</Grid>
+			<Label Grid.Column="1" Text="Aggiungi alla playlist" FontFamily="PoppinsSemiBold" FontSize="16" CharacterSpacing="-0.32" HorizontalTextAlignment="Center" VerticalOptions="Center" SemanticProperties.HeadingLevel="Level1" />
+		</Grid>
+
+		<Border Grid.Row="1" BackgroundColor="{DynamicResource TextPrimary}" StrokeThickness="0" StrokeShape="RoundRectangle 24" Padding="28,12" HorizontalOptions="Center" Margin="0,28,0,0">
+			<Label Text="Nuova playlist" TextColor="{DynamicResource Background}" FontFamily="MontserratBold" FontSize="16" />
+			<Border.GestureRecognizers>
+				<TapGestureRecognizer Tapped="OnNewTapped" />
+			</Border.GestureRecognizers>
+		</Border>
+
+		<CollectionView Grid.Row="2" ItemsSource="{Binding Playlists}" SelectionMode="None" Margin="0,32,0,0" VerticalScrollBarVisibility="Never">
+			<CollectionView.ItemsLayout>
+				<LinearItemsLayout Orientation="Vertical" ItemSpacing="19" />
+			</CollectionView.ItemsLayout>
+			<CollectionView.ItemTemplate>
+				<DataTemplate x:DataType="Playlist">
+					<PlaylistRow>
+						<PlaylistRow.GestureRecognizers>
+							<TapGestureRecognizer Tapped="OnPlaylistTapped" CommandParameter="{Binding .}" />
+						</PlaylistRow.GestureRecognizers>
+					</PlaylistRow>
+				</DataTemplate>
+			</CollectionView.ItemTemplate>
+			<CollectionView.EmptyView>
+				<ContentView>
+					<Label Text="Non hai ancora playlist: creane una qui sopra." Style="{StaticResource Caption}" HorizontalTextAlignment="Center" Margin="24,40,24,0" />
+				</ContentView>
+			</CollectionView.EmptyView>
+			<CollectionView.Footer>
+				<BoxView HeightRequest="48" />
+			</CollectionView.Footer>
+		</CollectionView>
+	</Grid>
+</ContentPage>
