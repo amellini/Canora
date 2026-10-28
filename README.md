@@ -117,11 +117,32 @@ Canora/                 the .NET MAUI app
 docs/screenshots/       the images of this README
 ```
 
+### License
+
+Can'ora is released under the [PolyForm Noncommercial License 1.0.0](LICENSE.md). You can use, study, modify and share
+it for free for any non-commercial purpose (personal use, study, research, schools, non-profit organizations), as long
+as you keep the license and the `Required Notice` line that credits the original project.
+
+**Commercial use** requires the author's written permission: [open an issue](https://github.com/amellini/Canora/issues)
+to ask for it.
+
 ### Disclaimer
 
-Can'ora is a personal, non-commercial project. It is not affiliated with Spotify, Deezer, YouTube, Apple or
-ListenBrainz. The audio comes from YouTube through YoutubeExplode, which may conflict with YouTube's Terms of Service:
-use it at your own risk. Cover art and artist photos in the screenshots belong to their owners.
+- **Educational purpose.** Can'ora is a personal project made for study and teaching: a hands-on example of .NET MAUI
+  development on Android and Windows and of how public web services work. It is not a commercial product and is not
+  meant to replace any streaming service.
+- **Third-party services, including Google's.** The audio is streamed from **YouTube**, a Google service, through the
+  YoutubeExplode library, which does not use the official YouTube API. The catalog comes from Deezer, lyrics from
+  LRCLIB, podcasts from the iTunes Search API and, optionally, suggestions from ListenBrainz. Can'ora is not affiliated
+  with, endorsed or sponsored by Google, YouTube, Spotify, Deezer, Apple, LRCLIB or ListenBrainz; their names and
+  trademarks belong to their owners.
+- **No improper use.** The project does not encourage or support any use that breaks the law, the rights of content
+  owners or the terms of the services above, in particular the YouTube Terms of Service. It does not save or
+  redistribute content: audio is only played as a stream. Whoever builds, installs or uses the app is responsible for
+  using it lawfully.
+- **No warranty.** The software is provided "as is", without any warranty: see the [license](LICENSE.md).
+- **Images.** Cover art and artist photos in the screenshots belong to their owners. If you hold the rights to some
+  content and want it removed, [open an issue](https://github.com/amellini/Canora/issues).
 
 ---
 
@@ -212,8 +233,29 @@ Canora/                 l'app .NET MAUI
 docs/screenshots/       le immagini di questo README
 ```
 
+### Licenza
+
+Can'ora è distribuita con la [PolyForm Noncommercial License 1.0.0](LICENSE.md). Puoi usarla, studiarla, modificarla e
+condividerla gratuitamente per qualsiasi scopo non commerciale (uso personale, studio, ricerca, scuole, organizzazioni
+non profit), a patto di mantenere la licenza e la riga `Required Notice` che cita il progetto di origine.
+
+**L'uso commerciale** richiede il permesso scritto dell'autore: [apri una issue](https://github.com/amellini/Canora/issues)
+per chiederlo.
+
 ### Avvertenze
 
-Can'ora è un progetto personale e non commerciale. Non è affiliato a Spotify, Deezer, YouTube, Apple o ListenBrainz.
-L'audio arriva da YouTube tramite YoutubeExplode, e questo può essere in contrasto con i Termini di servizio di YouTube:
-usala a tuo rischio. Copertine e foto degli artisti negli screenshot appartengono ai rispettivi proprietari.
+- **Scopo didattico.** Can'ora è un progetto personale nato per studio e didattica: un esempio pratico di sviluppo con
+  .NET MAUI su Android e Windows e di come funzionano i servizi web pubblici. Non è un prodotto commerciale e non vuole
+  sostituire alcun servizio di streaming.
+- **Servizi di terze parti, compresi quelli di Google.** L'audio arriva in streaming da **YouTube**, un servizio di
+  Google, tramite la libreria YoutubeExplode, che non usa l'API ufficiale di YouTube. Il catalogo arriva da Deezer, i
+  testi da LRCLIB, i podcast dall'iTunes Search API e, se attivate, le proposte da ListenBrainz. Can'ora non è affiliata,
+  approvata o sponsorizzata da Google, YouTube, Spotify, Deezer, Apple, LRCLIB o ListenBrainz; nomi e marchi appartengono
+  ai rispettivi proprietari.
+- **Nessun uso improprio.** Il progetto non incoraggia né sostiene alcun uso che violi la legge, i diritti dei titolari
+  dei contenuti o i termini dei servizi citati, in particolare i Termini di servizio di YouTube. Non salva né
+  ridistribuisce contenuti: l'audio viene solo riprodotto in streaming. Chi compila, installa o usa l'app è responsabile
+  di farlo nel rispetto della legge.
+- **Nessuna garanzia.** Il software è fornito "così com'è", senza alcuna garanzia: vedi la [licenza](LICENSE.md).
+- **Immagini.** Copertine e foto degli artisti negli screenshot appartengono ai rispettivi proprietari. Se detieni i
+  diritti su qualche contenuto e vuoi che venga rimosso, [apri una issue](https://github.com/amellini/Canora/issues).
