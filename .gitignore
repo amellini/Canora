@@ -365,3 +365,7 @@ FodyWeavers.xsd
 # Strumenti locali (indice di tokensave, script e impostazioni di Claude Code)
 .tokensave/
 .claude/
+
+# Chiavi di firma Android: mai nel repo
+*.keystore
+*.jks

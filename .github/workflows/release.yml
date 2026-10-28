@@ -1,0 +1,68 @@
+name: Release
+
+# Un tag vX.Y.Z (git tag v1.0.0, poi git push origin v1.0.0) compila l'APK per Android e lo zip per Windows e li
+# pubblica in una release con quel nome. Secrets del repo: ANDROID_KEYSTORE (il keystore in base64, alias "canora")
+# e ANDROID_KEYSTORE_PASSWORD (la stessa per keystore e chiave).
+# YAML vieta i tab nell'indentazione: qui solo spazi.
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    # Il target Windows si compila solo su Windows; l'immagine ha già Android SDK e JDK.
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 11.0.x
+          dotnet-quality: preview
+
+      - name: Workload MAUI
+        run: dotnet workload install maui-android maui-windows
+
+      - name: Versione dal tag
+        # v1.2.3 → ApplicationDisplayVersion 1.2.3, ApplicationVersion 10203: il versionCode di Android deve solo crescere.
+        # ponytail: minor e patch sotto 100; uno schema diverso se un giorno servono di più.
+        run: |
+          if ('${{ github.ref_name }}' -notmatch '^v(\d+)\.(\d+)\.(\d+)$') { throw "Tag '${{ github.ref_name }}': serve vX.Y.Z" }
+          "VERSION=$($Matches[1]).$($Matches[2]).$($Matches[3])" >> $env:GITHUB_ENV
+          "VERSION_CODE=$([int]$Matches[1] * 10000 + [int]$Matches[2] * 100 + [int]$Matches[3])" >> $env:GITHUB_ENV
+
+      - name: Android SDK
+        # La piattaforma che l'app chiede (API 37) può mancare nell'immagine: la installa il target di .NET Android.
+        run: dotnet build Canora/Canora.csproj -t:InstallAndroidDependencies -f net11.0-android "-p:AndroidSdkDirectory=$env:ANDROID_HOME" -p:AcceptAndroidSDKLicenses=True
+
+      - name: APK Android
+        env:
+          ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          $keystore = "$env:RUNNER_TEMP\canora.keystore"
+          [IO.File]::WriteAllBytes($keystore, [Convert]::FromBase64String($env:ANDROID_KEYSTORE))
+          dotnet publish Canora/Canora.csproj -f net11.0-android -c Release -p:AndroidPackageFormat=apk `
+            -p:ApplicationDisplayVersion=$env:VERSION -p:ApplicationVersion=$env:VERSION_CODE `
+            -p:AndroidKeyStore=true "-p:AndroidSigningKeyStore=$keystore" -p:AndroidSigningKeyAlias=canora `
+            -p:AndroidSigningKeyPass=env:ANDROID_KEYSTORE_PASSWORD -p:AndroidSigningStorePass=env:ANDROID_KEYSTORE_PASSWORD
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          Copy-Item Canora/bin/Release/net11.0-android/publish/com.mellosofy.canora-Signed.apk "Canora-$env:VERSION.apk"
+
+      - name: Zip Windows
+        # Self-contained: chi la scarica non ha il runtime di .NET 11 né il Windows App SDK.
+        run: |
+          dotnet publish Canora/Canora.csproj -f net11.0-windows10.0.19041.0 -c Release -r win-x64 `
+            -p:SelfContained=true -p:WindowsAppSDKSelfContained=true `
+            -p:ApplicationDisplayVersion=$env:VERSION -p:ApplicationVersion=$env:VERSION_CODE
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          Compress-Archive Canora/bin/Release/net11.0-windows10.0.19041.0/win-x64/publish/* "Canora-$env:VERSION-win-x64.zip"
+
+      - name: Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create '${{ github.ref_name }}' "Canora-$env:VERSION.apk" "Canora-$env:VERSION-win-x64.zip" --title "Can'ora $env:VERSION" --generate-notes

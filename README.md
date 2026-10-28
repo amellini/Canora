@@ -42,6 +42,14 @@ each track the app picks the video with the same length.
 The interface is in Italian. The name comes from *canora*, Italian for "melodious" (as in *voce canora*, a tuneful
 voice).
 
+### Download
+
+Get the APK for Android and the zip for Windows from [Releases](https://github.com/amellini/Canora/releases).
+
+- **Android 8.0 or later**: open the APK and allow installs from that source when Android asks.
+- **Windows 10 1809 or later**: unzip and run `Canora.exe`. The exe is not signed, so SmartScreen may ask you to
+  confirm (*More info → Run anyway*).
+
 ### Features
 
 - **Search** for artists, albums, tracks, playlists and podcasts, with recent searches and genre tiles to browse.
@@ -127,6 +135,14 @@ Il catalogo (artisti, album, copertine, classifiche) arriva dall'API pubblica di
 ogni brano l'app sceglie il video con la stessa durata.
 
 L'interfaccia è in italiano. Il nome viene da *canora*, come in *voce canora*.
+
+### Download
+
+L'APK per Android e lo zip per Windows sono nelle [Release](https://github.com/amellini/Canora/releases).
+
+- **Android 8.0 o successivo**: apri l'APK e consenti l'installazione da quella fonte quando Android lo chiede.
+- **Windows 10 1809 o successivo**: estrai lo zip e avvia `Canora.exe`. L'exe non è firmato, quindi SmartScreen può
+  chiedere conferma (*Ulteriori informazioni → Esegui comunque*).
 
 ### Funzionalità
 
