@@ -41,6 +41,12 @@ public partial class App : Application
 				MouseDrag.Attach(native);
 			}
 		};
+#elif MACCATALYST
+		// Come su Windows non scende sotto una larghezza da telefono; successivo e precedente dai tasti multimediali.
+		window.Title = "Can'ora";
+		window.MinimumWidth = 360;
+		window.MinimumHeight = 600;
+		RemoteCommands.Attach(services.GetRequiredService<ViewModels.PlayerViewModel>());
 #endif
 		return window;
 	}

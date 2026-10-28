@@ -1,9 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<!-- Android e Windows. Per aggiungere iOS: net11.0-ios + Platforms/iOS (Info.plist con UIBackgroundModes=audio). -->
+		<!-- Android, Windows e Mac (Mac Catalyst). Ogni target desktop si compila solo sul suo sistema: Mac Catalyst vuole
+		     Xcode. Per aggiungere iOS: net11.0-ios + Platforms/iOS (Info.plist con UIBackgroundModes=audio). -->
 		<TargetFrameworks>net11.0-android</TargetFrameworks>
 		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net11.0-windows10.0.19041.0</TargetFrameworks>
+		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('osx'))">$(TargetFrameworks);net11.0-maccatalyst</TargetFrameworks>
 
 		<OutputType>Exe</OutputType>
 		<RootNamespace>Canora</RootNamespace>
@@ -26,6 +28,8 @@
 		<!-- 26 e non 24 (minimo di .NET 11): MediaElement dichiara UseMauiCommunityToolkitMediaElement solo da Android 26 (CA1416). -->
 		<SupportedOSPlatformVersion Condition="'$([MSBuild]::GetTargetPlatformIdentifier($(TargetFramework)))' == 'android'">26.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="'$([MSBuild]::GetTargetPlatformIdentifier($(TargetFramework)))' == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
+		<!-- Mac Catalyst 17 = macOS 14 Sonoma, il minimo del template di MAUI 11. -->
+		<SupportedOSPlatformVersion Condition="'$([MSBuild]::GetTargetPlatformIdentifier($(TargetFramework)))' == 'maccatalyst'">17.0</SupportedOSPlatformVersion>
 		<TargetPlatformMinVersion Condition="'$([MSBuild]::GetTargetPlatformIdentifier($(TargetFramework)))' == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
 		<!-- Windows non pacchettizzato: un .exe da lanciare così com'è, senza MSIX né certificato. -->
 		<WindowsPackageType Condition="'$([MSBuild]::GetTargetPlatformIdentifier($(TargetFramework)))' == 'windows'">None</WindowsPackageType>

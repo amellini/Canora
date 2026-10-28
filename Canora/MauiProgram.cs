@@ -72,6 +72,10 @@ public static class MauiProgram
 			if (view.Orientation == ScrollOrientation.Horizontal)
 				handler.PlatformView.AddHandler(Microsoft.UI.Xaml.UIElement.PointerWheelChangedEvent, ShiftWheel, true);
 		});
+#elif MACCATALYST
+		// Lo stesso per l'UITextField: niente bordo arrotondato suo, lo sfondo è quello del contenitore.
+		Microsoft.Maui.Handlers.EntryHandler.Mapper.AppendToMapping("NoUnderline", (handler, _) =>
+			handler.PlatformView.BorderStyle = UIKit.UITextBorderStyle.None);
 #endif
 
 		// Tutto singleton: una sola pagina radice che vive quanto l'app, e un solo player.

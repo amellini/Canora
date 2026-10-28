@@ -18,11 +18,11 @@
 		<!-- Windows: campo compatto accanto al titolo (DesktopSearchBox) al posto della barra alta del telefono -->
 		<Grid ColumnDefinitions="Auto,*" ColumnSpacing="24">
 			<Label Text="Podcast" Style="{StaticResource ScreenTitle}" SemanticProperties.HeadingLevel="Level1" VerticalOptions="Center" />
-			<DesktopSearchBox Grid.Column="1" IsVisible="{OnPlatform Default=False, WinUI=True}" MaximumWidthRequest="480" HorizontalOptions="Start" WidthRequest="480" VerticalOptions="Center"
+			<DesktopSearchBox Grid.Column="1" IsVisible="{OnIdiom Default=False, Desktop=True}" MaximumWidthRequest="480" HorizontalOptions="Start" WidthRequest="480" VerticalOptions="Center"
 							  Text="{Binding Query}" Placeholder="Cerca un podcast per titolo" SearchCommand="{Binding SubmitCommand}" />
 		</Grid>
 
-		<Border Grid.Row="1" Margin="0,25,0,0" HeightRequest="63" IsVisible="{OnPlatform Default=True, WinUI=False}" BackgroundColor="{DynamicResource SearchBar}" StrokeThickness="0" StrokeShape="RoundRectangle 6">
+		<Border Grid.Row="1" Margin="0,25,0,0" HeightRequest="63" IsVisible="{OnIdiom Default=True, Desktop=False}" BackgroundColor="{DynamicResource SearchBar}" StrokeThickness="0" StrokeShape="RoundRectangle 6">
 			<Grid ColumnDefinitions="56,*">
 				<Image Source="ic_search_bar.png" WidthRequest="56" HeightRequest="36" Tint.Color="{DynamicResource SearchIcon}" />
 				<Entry Grid.Column="1"

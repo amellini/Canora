@@ -8,6 +8,10 @@ using System.Numerics;
 using Microsoft.UI.Composition;
 using Microsoft.UI.Xaml.Hosting;
 using Microsoft.UI.Xaml.Media;
+#elif MACCATALYST
+using System.Runtime.CompilerServices;
+using Foundation;
+using UIKit;
 #endif
 
 namespace Canora.Controls;
@@ -85,6 +89,37 @@ public static class Tint
 				break;
 			}
 		return Masks[file] = mask;
+	}
+#elif MACCATALYST
+	// UIKit colora da sé le immagini "template" con il TintColor dell'UIImageView. L'immagine arriva dopo, quando la
+	// sorgente finisce di caricarsi (e cambia con play↔pausa): un osservatore KVO su "image" la rifà template ogni volta.
+	public static void Register() =>
+		ImageHandler.Mapper.AppendToMapping(nameof(ColorProperty), (handler, image) =>
+		{
+			var view = handler.PlatformView;
+			if (image is BindableObject bindable && GetColor(bindable) is { } color)
+			{
+				view.TintColor = color.ToPlatform();
+				Template(view);
+				if (!Observers.TryGetValue(view, out _))
+					Observers.Add(view, view.AddObserver("image", NSKeyValueObservingOptions.New, _ => Template(view)));
+			}
+			else if (Observers.TryGetValue(view, out var observer))
+			{
+				observer.Dispose();
+				Observers.Remove(view);
+				if (view.Image is { } tinted)
+					view.Image = tinted.ImageWithRenderingMode(UIImageRenderingMode.Automatic);
+			}
+		});
+
+	static readonly ConditionalWeakTable<UIImageView, IDisposable> Observers = new();
+
+	// Rimettere Image fa scattare di nuovo l'osservatore: il controllo sul RenderingMode ferma il giro.
+	static void Template(UIImageView view)
+	{
+		if (view.Image is { RenderingMode: not UIImageRenderingMode.AlwaysTemplate } image)
+			view.Image = image.ImageWithRenderingMode(UIImageRenderingMode.AlwaysTemplate);
 	}
 #endif
 }

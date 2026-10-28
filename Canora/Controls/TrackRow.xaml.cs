@@ -16,10 +16,12 @@ public partial class TrackRow : ContentView
 	public TrackRow()
 	{
 		InitializeComponent();
-#if WINDOWS
+#if WINDOWS || MACCATALYST
 		Texts.Remove(MobileAlbumLabel);
+#if WINDOWS
 		LinkStyle.Apply(AlbumLabel);
 		LinkStyle.Apply(ArtistLabel);
+#endif
 #else
 		// Telefono: tre righe, quindi riga più alta e copertina più grande; l'album sta sulla sua riga.
 		Line.Remove(AlbumLabel);

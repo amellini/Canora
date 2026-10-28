@@ -360,10 +360,10 @@ public sealed partial class PlayerViewModel(YoutubeClient youtube, LibraryStore 
 
 			// Su un thread del pool: altrimenti le continuation di YoutubeExplode tornano sul thread UI e Android
 			// rifiuta la chiusura delle risposte HTTP lì (NetworkOnMainThreadException).
-#if WINDOWS
-			// Media Foundation suona Opus/WebM solo con l'estensione "Web Media Extensions": AAC/MP4 c'è sempre.
-			// E l'URL e non lo stream: dietro AsRandomAccessStream di MediaElement uno Stream .NET resta in Opening,
-			// mentre l'URL Media Foundation lo scarica da sé con richieste Range, seek compreso.
+#if WINDOWS || MACCATALYST
+			// Media Foundation suona Opus/WebM solo con l'estensione "Web Media Extensions" e AVFoundation (Mac) per
+			// niente: AAC/MP4 c'è sempre. E l'URL e non lo stream: dietro AsRandomAccessStream di MediaElement uno Stream
+			// .NET resta in Opening, mentre l'URL il player di sistema lo scarica da sé con richieste Range, seek compreso.
 			var url = await Task.Run(async () =>
 			{
 				var manifest = await youtube.Videos.Streams.GetManifestAsync(track.Id, cts.Token);
@@ -394,7 +394,7 @@ public sealed partial class PlayerViewModel(YoutubeClient youtube, LibraryStore 
 			player.MetadataArtist = track.Artist;
 			player.MetadataArtworkUrl = track.ThumbUrl;
 			player.ShouldLoopPlayback = Repeat == RepeatMode.One;
-#if WINDOWS
+#if WINDOWS || MACCATALYST
 			player.Source = MediaSource.FromUri(url);
 #else
 			player.Source = MediaSource.FromStream(next);

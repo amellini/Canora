@@ -12,13 +12,13 @@
 		     tile è il Padding di un contenitore e non il Margin: il FlexLayout toglie i margini dalla misura della tile
 		     (la taglia), e su Windows rientra di 8 per allineare la prima colonna al titolo. -->
 		<DataTemplate x:Key="TileTemplate" x:DataType="Tile">
-			<ContentView FlexLayout.Basis="{OnPlatform Default=47.5%, WinUI=Auto}" Padding="{OnPlatform Default='0,0,0,26', WinUI=8}">
-				<Border WidthRequest="{OnPlatform Default=-1, WinUI=260}" HeightRequest="{OnPlatform Default=116, WinUI=160}" BackgroundColor="{Binding Color}" StrokeThickness="0" StrokeShape="RoundRectangle 6">
+			<ContentView FlexLayout.Basis="{OnIdiom Default=47.5%, Desktop=Auto}" Padding="{OnIdiom Default='0,0,0,26', Desktop=8}">
+				<Border WidthRequest="{OnIdiom Default=-1, Desktop=260}" HeightRequest="{OnIdiom Default=116, Desktop=160}" BackgroundColor="{Binding Color}" StrokeThickness="0" StrokeShape="RoundRectangle 6">
 					<Grid>
 						<!-- Copertina della prima playlist Deezer per la query su tutta la tile, come le hero: titolo in basso su
 						     una velatura scura. Il colore della tile resta sotto finché la copertina non c'è. Alta quanto la tile:
 						     quadrata misurerebbe quanto è larga. -->
-						<Image Source="{Binding Image}" Aspect="AspectFill" HeightRequest="{OnPlatform Default=116, WinUI=160}" />
+						<Image Source="{Binding Image}" Aspect="AspectFill" HeightRequest="{OnIdiom Default=116, Desktop=160}" />
 						<BoxView>
 							<BoxView.Background>
 								<LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
@@ -85,12 +85,12 @@
 		<!-- Windows: campo compatto accanto al titolo (DesktopSearchBox) al posto della barra alta del telefono -->
 		<Grid ColumnDefinitions="Auto,*" ColumnSpacing="24">
 			<Label Text="Cerca" Style="{StaticResource ScreenTitle}" SemanticProperties.HeadingLevel="Level1" VerticalOptions="Center" />
-			<DesktopSearchBox Grid.Column="1" IsVisible="{OnPlatform Default=False, WinUI=True}" MaximumWidthRequest="480" HorizontalOptions="Start" WidthRequest="480" VerticalOptions="Center"
+			<DesktopSearchBox Grid.Column="1" IsVisible="{OnIdiom Default=False, Desktop=True}" MaximumWidthRequest="480" HorizontalOptions="Start" WidthRequest="480" VerticalOptions="Center"
 							  Text="{Binding Query}" Placeholder="Artisti, brani o video" SearchCommand="{Binding SubmitCommand}" />
 		</Grid>
 
 		<!-- Search bar: bianca 96%, 386×63, raggio 6, icona 56×36 #181818, placeholder Bold 19 -->
-		<Border Grid.Row="1" Margin="0,25,0,0" HeightRequest="63" IsVisible="{OnPlatform Default=True, WinUI=False}" BackgroundColor="{DynamicResource SearchBar}" StrokeThickness="0" StrokeShape="RoundRectangle 6">
+		<Border Grid.Row="1" Margin="0,25,0,0" HeightRequest="63" IsVisible="{OnIdiom Default=True, Desktop=False}" BackgroundColor="{DynamicResource SearchBar}" StrokeThickness="0" StrokeShape="RoundRectangle 6">
 			<Grid ColumnDefinitions="56,*">
 				<Image Source="ic_search_bar.png" WidthRequest="56" HeightRequest="36" Tint.Color="{DynamicResource SearchIcon}" />
 				<Entry Grid.Column="1"
@@ -218,10 +218,10 @@
 						</Label.GestureRecognizers>
 					</Label>
 				</Grid>
-				<FlexLayout BindableLayout.ItemsSource="{Binding RecentTiles}" BindableLayout.ItemTemplate="{StaticResource TileTemplate}" Wrap="Wrap" JustifyContent="{OnPlatform Default=SpaceBetween, WinUI=Start}" Margin="{OnPlatform Default=0, WinUI='-8,0,0,0'}" AlignContent="Start" AlignItems="Start" IsVisible="{Binding HasRecentSearches}" />
+				<FlexLayout BindableLayout.ItemsSource="{Binding RecentTiles}" BindableLayout.ItemTemplate="{StaticResource TileTemplate}" Wrap="Wrap" JustifyContent="{OnIdiom Default=SpaceBetween, Desktop=Start}" Margin="{OnIdiom Default=0, Desktop='-8,0,0,0'}" AlignContent="Start" AlignItems="Start" IsVisible="{Binding HasRecentSearches}" />
 
 				<Label Text="Sfoglia tutto" Style="{StaticResource SubsectionTitle}" Margin="0,6,0,22" />
-				<FlexLayout BindableLayout.ItemsSource="{Binding BrowseTiles}" BindableLayout.ItemTemplate="{StaticResource TileTemplate}" Wrap="Wrap" JustifyContent="{OnPlatform Default=SpaceBetween, WinUI=Start}" Margin="{OnPlatform Default=0, WinUI='-8,0,0,0'}" AlignContent="Start" AlignItems="Start" />
+				<FlexLayout BindableLayout.ItemsSource="{Binding BrowseTiles}" BindableLayout.ItemTemplate="{StaticResource TileTemplate}" Wrap="Wrap" JustifyContent="{OnIdiom Default=SpaceBetween, Desktop=Start}" Margin="{OnIdiom Default=0, Desktop='-8,0,0,0'}" AlignContent="Start" AlignItems="Start" />
 			</VerticalStackLayout>
 		</ScrollView>
 

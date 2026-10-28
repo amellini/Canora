@@ -1,0 +1,52 @@
+name: Mac
+
+# Da Windows non si compila per Mac Catalyst: qui la build, poi l'app parte per 30 secondi, e lo screenshot e il log
+# finiscono fra gli artifact del run. Gira sui push che toccano il progetto, o a mano (Actions → Mac → Run workflow).
+# YAML vieta i tab nell'indentazione: qui solo spazi.
+
+on:
+  push:
+    paths: ['Canora/**', '.github/workflows/mac.yml']
+  workflow_dispatch:
+
+jobs:
+  build:
+    # macOS con Xcode 27 (immagine in preview): .NET 11 compila per Mac Catalyst 27.
+    runs-on: xcode-27
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 11.0.x
+          dotnet-quality: preview
+
+      - name: Workload MAUI
+        run: dotnet workload install maui-maccatalyst
+
+      - name: Build
+        run: dotnet build Canora/Canora.csproj -f net11.0-maccatalyst -c Debug -r maccatalyst-arm64
+
+      - name: Avvio
+        # Il binario dentro il bundle, lanciato così, scrive stdout e stderr (eccezioni comprese) nel log.
+        run: |
+          app=$(find Canora/bin/Debug/net11.0-maccatalyst -maxdepth 3 -name Canora.app | head -1)
+          "$app/Contents/MacOS/Canora" > app.log 2>&1 &
+          pid=$!
+          sleep 30
+          screencapture -x screenshot.png || true
+          if ! kill -0 $pid 2>/dev/null; then
+            echo "::error::Can'ora si è chiusa da sola"
+            tail -50 app.log
+            exit 1
+          fi
+          kill $pid
+          tail -20 app.log
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mac
+          path: |
+            screenshot.png
+            app.log

@@ -12,7 +12,7 @@
 		     icone (con tooltip), espansa anche il nome della sezione; il ☰ la alterna e la scelta resta fra un avvio e
 		     l'altro. La voce attiva ha la linea verticale a sinistra. Sfondo Transparent sulle voci: su WinUI un Grid
 		     senza sfondo non riceve i clic fra i figli. -->
-		<Grid x:Name="SideBar" IsVisible="{OnPlatform Default=False, WinUI=True}" WidthRequest="56" ColumnDefinitions="*,1">
+		<Grid x:Name="SideBar" IsVisible="{OnIdiom Default=False, Desktop=True}" WidthRequest="56" ColumnDefinitions="*,1">
 			<VerticalStackLayout>
 				<Grid HeightRequest="48" WidthRequest="56" HorizontalOptions="Start" BackgroundColor="Transparent" ToolTipProperties.Text="Espandi o comprimi" SemanticProperties.Description="Espandi o comprimi la barra laterale">
 					<VerticalStackLayout Spacing="4" HorizontalOptions="Center" VerticalOptions="Center">
@@ -93,7 +93,7 @@
 							<Label Text="{Binding Current.Artist}" Style="{StaticResource MiniArtist}" />
 						</VerticalStackLayout>
 						<!-- Windows: volume (lo stesso del player espanso, salvato fra un avvio e l'altro) -->
-						<HorizontalStackLayout Grid.Column="2" IsVisible="{OnPlatform Default=False, WinUI=True}" Spacing="8" VerticalOptions="Center" Margin="0,0,12,0">
+						<HorizontalStackLayout Grid.Column="2" IsVisible="{OnIdiom Default=False, Desktop=True}" Spacing="8" VerticalOptions="Center" Margin="0,0,12,0">
 							<Label Text="&#xE767;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" TextColor="{DynamicResource TextPrimary}" VerticalOptions="Center" />
 							<Slider Value="{Binding Volume}" Minimum="0" Maximum="1" WidthRequest="120" VerticalOptions="Center"
 									MinimumTrackColor="{DynamicResource TextPrimary}" MaximumTrackColor="{DynamicResource ProgressTrack}" ThumbColor="{DynamicResource TextPrimary}"
@@ -145,7 +145,7 @@
 
 				<!-- Nav: icona 52×34 + etichetta Book 12; attivo bianco, inattivo #B1B7B2. Quattro posti come nel Figma:
 				     "Premium" è diventato Podcast. -->
-				<Grid ColumnDefinitions="*,*,*,*" Padding="0,6,0,8" IsVisible="{OnPlatform Default=True, WinUI=False}">
+				<Grid ColumnDefinitions="*,*,*,*" Padding="0,6,0,8" IsVisible="{OnIdiom Default=True, Desktop=False}">
 					<VerticalStackLayout Spacing="3" SemanticProperties.Description="Home">
 						<Image x:Name="NavHomeIcon" Source="ic_nav_home.png" WidthRequest="52" HeightRequest="34" />
 						<Label x:Name="NavHomeLabel" Text="Home" Style="{StaticResource NavLabel}" />

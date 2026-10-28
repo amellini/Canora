@@ -13,7 +13,7 @@ public partial class NowPlayingView : ContentView
 	public NowPlayingView()
 	{
 		InitializeComponent();
-#if WINDOWS
+#if WINDOWS || MACCATALYST
 		// Desktop: controlli più piccoli sotto la copertina da bordo a bordo (le misure del Figma sono per il pollice).
 		foreach (View button in Buttons)
 			(button.WidthRequest, button.HeightRequest) = (button.WidthRequest * DesktopScale, button.HeightRequest * DesktopScale);
@@ -49,7 +49,7 @@ public partial class NowPlayingView : ContentView
 		_ = HideAsync();
 	}
 
-#if WINDOWS
+#if WINDOWS || MACCATALYST
 	// Titolo e artista nella riga dei controlli quando fra il bordo sinistro e i pulsanti centrati c'è posto: allora
 	// la copertina non li ripete. In una finestra stretta restano sulla copertina, come prima; il volume, a destra,
 	// si accorcia o sparisce.
@@ -85,7 +85,7 @@ public partial class NowPlayingView : ContentView
 	}
 
 	const double MinRowTitle = 160;
-	const double DesktopButtons = 360; // la fila dei pulsanti centrata (WidthRequest su WinUI nello XAML)
+	const double DesktopButtons = 360; // la fila dei pulsanti centrata (WidthRequest su desktop nello XAML)
 #endif
 
 	const double DesktopScale = 0.75;
@@ -115,12 +115,12 @@ public partial class NowPlayingView : ContentView
 	protected override void OnSizeAllocated(double width, double height)
 	{
 		base.OnSizeAllocated(width, height);
-#if WINDOWS
+#if WINDOWS || MACCATALYST
 		UpdateRowTitle(width);
 #endif
-		// Su Windows sempre la disposizione verticale: la finestra del desktop è quasi sempre più larga che alta, ma i
+		// Su desktop sempre la disposizione verticale: la finestra del desktop è quasi sempre più larga che alta, ma i
 		// controlli vanno sotto la copertina (in colonna a destra uscivano dallo schermo, con barra e tempi tagliati).
-		var landscape = width > height && DeviceInfo.Platform != DevicePlatform.WinUI;
+		var landscape = width > height && DeviceInfo.Idiom != DeviceIdiom.Desktop;
 		if (landscape == this.landscape)
 			return;
 		this.landscape = landscape;

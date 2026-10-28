@@ -167,7 +167,7 @@
 		<!-- Su Windows la fila è larga 360 e centrata (sulla larghezza del desktop i pulsanti finirebbero ai due bordi) e i
 		     pulsanti sono al 75%: vedi il costruttore. -->
 		<FlexLayout x:Name="Buttons" Grid.Row="4" Grid.ColumnSpan="2" JustifyContent="SpaceBetween" AlignItems="Center" HeightRequest="76" Margin="15,0,15,0"
-					WidthRequest="{OnPlatform Default=-1, WinUI=360}" HorizontalOptions="{OnPlatform Default=Fill, WinUI=Center}">
+					WidthRequest="{OnIdiom Default=-1, Desktop=360}" HorizontalOptions="{OnIdiom Default=Fill, Desktop=Center}">
 			<Image Source="ic_replay15.png" WidthRequest="30" HeightRequest="30" Style="{StaticResource Icon}" IsVisible="{Binding IsEpisode}" SemanticProperties.Description="Indietro di 15 secondi">
 				<Image.GestureRecognizers>
 					<TapGestureRecognizer Command="{Binding SkipBackCommand}" />
@@ -269,7 +269,7 @@
 
 		<!-- Windows: volume dell'app a destra dei controlli, come sui player desktop. Resta fra un avvio e l'altro
 		     (PlayerViewModel.Volume); su Android si usano i tasti del volume del telefono. -->
-		<HorizontalStackLayout x:Name="VolumeBar" Grid.Row="4" Grid.ColumnSpan="2" IsVisible="{OnPlatform Default=False, WinUI=True}" HorizontalOptions="End" VerticalOptions="Center" Spacing="8" Margin="0,0,15,0">
+		<HorizontalStackLayout x:Name="VolumeBar" Grid.Row="4" Grid.ColumnSpan="2" IsVisible="{OnIdiom Default=False, Desktop=True}" HorizontalOptions="End" VerticalOptions="Center" Spacing="8" Margin="0,0,15,0">
 			<Label Text="&#xE767;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" TextColor="{DynamicResource TextPrimary}" VerticalOptions="Center" />
 			<Slider x:Name="VolumeSlider" Value="{Binding Volume}" Minimum="0" Maximum="1" WidthRequest="140" VerticalOptions="Center"
 					MinimumTrackColor="{DynamicResource TextPrimary}" MaximumTrackColor="{DynamicResource SeekRail}" ThumbColor="{DynamicResource TextPrimary}"

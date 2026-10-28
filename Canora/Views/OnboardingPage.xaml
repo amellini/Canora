@@ -34,7 +34,7 @@
 	</ContentPage.Resources>
 
 	<!-- Su Windows una colonna da telefono al centro della finestra -->
-	<Grid RowDefinitions="Auto,*,Auto" Padding="0,10,0,0" WidthRequest="{OnPlatform Default=-1, WinUI=560}">
+	<Grid RowDefinitions="Auto,*,Auto" Padding="0,10,0,0" WidthRequest="{OnIdiom Default=-1, Desktop=560}">
 
 		<!-- Indietro (dal secondo passo) e Salta / Fine -->
 		<Grid ColumnDefinitions="44,*,Auto" MinimumHeightRequest="44" Margin="18,0">
