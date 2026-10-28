@@ -30,13 +30,15 @@ jobs:
         run: sudo xcode-select -s /Applications/Xcode_27.0.app
 
       - name: Build
+        # Release universale come nelle release (release.yml): si prova l'app che si pubblica, trimming compreso.
         # TargetFrameworks ridotto al solo Mac: anche con -f il restore passa da tutti i target e vorrebbe il workload Android.
-        run: dotnet build Canora/Canora.csproj -f net11.0-maccatalyst -p:TargetFrameworks=net11.0-maccatalyst -c Debug -r maccatalyst-arm64
+        run: dotnet build Canora/Canora.csproj -f net11.0-maccatalyst -p:TargetFrameworks=net11.0-maccatalyst -c Release
 
       - name: Avvio
         # Il binario dentro il bundle, lanciato così, scrive stdout e stderr (eccezioni comprese) nel log.
         run: |
-          app=$(find Canora/bin/Debug/net11.0-maccatalyst -maxdepth 3 -name Canora.app | head -1)
+          app=Canora/bin/Release/net11.0-maccatalyst/Canora.app
+          ls -d "$app"
           "$app/Contents/MacOS/Canora" > app.log 2>&1 &
           pid=$!
           sleep 30

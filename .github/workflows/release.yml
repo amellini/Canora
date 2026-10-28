@@ -1,7 +1,7 @@
 name: Release
 
-# Un tag vX.Y.Z (git tag v1.0.0, poi git push origin v1.0.0) compila l'APK per Android e lo zip per Windows e li
-# pubblica in una release con quel nome. Secrets del repo: ANDROID_KEYSTORE (il keystore in base64, alias "canora")
+# Un tag vX.Y.Z (git tag v1.0.0, poi git push origin v1.0.0) compila l'APK per Android e gli zip per Windows e per Mac
+# e li pubblica in una release con quel nome. Secrets del repo: ANDROID_KEYSTORE (il keystore in base64, alias "canora")
 # e ANDROID_KEYSTORE_PASSWORD (la stessa per keystore e chiave).
 # YAML vieta i tab nell'indentazione: qui solo spazi.
 
@@ -16,6 +16,9 @@ jobs:
   release:
     # Il target Windows si compila solo su Windows; l'immagine ha già Android SDK e JDK.
     runs-on: windows-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      code: ${{ steps.version.outputs.code }}
     steps:
       - uses: actions/checkout@v4
 
@@ -28,12 +31,15 @@ jobs:
         run: dotnet workload install maui-android maui-windows
 
       - name: Versione dal tag
+        id: version
         # v1.2.3 → ApplicationDisplayVersion 1.2.3, ApplicationVersion 10203: il versionCode di Android deve solo crescere.
-        # ponytail: minor e patch sotto 100; uno schema diverso se un giorno servono di più.
+        # Anche negli output del job, per il job Mac. ponytail: minor e patch sotto 100; uno schema diverso se servono di più.
         run: |
           if ('${{ github.ref_name }}' -notmatch '^v(\d+)\.(\d+)\.(\d+)$') { throw "Tag '${{ github.ref_name }}': serve vX.Y.Z" }
-          "VERSION=$($Matches[1]).$($Matches[2]).$($Matches[3])" >> $env:GITHUB_ENV
-          "VERSION_CODE=$([int]$Matches[1] * 10000 + [int]$Matches[2] * 100 + [int]$Matches[3])" >> $env:GITHUB_ENV
+          $version = "$($Matches[1]).$($Matches[2]).$($Matches[3])"
+          $code = [int]$Matches[1] * 10000 + [int]$Matches[2] * 100 + [int]$Matches[3]
+          "VERSION=$version", "VERSION_CODE=$code" | Add-Content $env:GITHUB_ENV
+          "version=$version", "code=$code" | Add-Content $env:GITHUB_OUTPUT
 
       - name: Android SDK
         # La piattaforma che l'app chiede (API 37) può mancare nell'immagine: la installa il target di .NET Android.
@@ -66,3 +72,36 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release create '${{ github.ref_name }}' "Canora-$env:VERSION.apk" "Canora-$env:VERSION-win-x64.zip" --title "Can'ora $env:VERSION" --generate-notes
+
+  mac:
+    # Dopo la release, che c'è già con APK e zip per Windows: aggiunge lo zip per Mac. Se questo job fallisce, Android e
+    # Windows restano pubblicati. Gli stessi passi di mac.yml.
+    needs: release
+    runs-on: xcode-27
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 11.0.x
+          dotnet-quality: preview
+
+      - name: Workload MAUI
+        run: dotnet workload install maui-maccatalyst
+
+      - name: Xcode
+        # L'Xcode preciso che vuole questa versione di .NET per Mac Catalyst, come in mac.yml.
+        run: sudo xcode-select -s /Applications/Xcode_27.0.app
+
+      - name: Zip Mac
+        # App universale (Apple Silicon e Intel) con la firma ad hoc dell'SDK: senza Developer ID né notarizzazione
+        # macOS la blocca alla prima apertura (vedi il README). ditto tiene intatti il bundle e la sua firma.
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.release.outputs.version }}
+          VERSION_CODE: ${{ needs.release.outputs.code }}
+        run: |
+          dotnet build Canora/Canora.csproj -f net11.0-maccatalyst -p:TargetFrameworks=net11.0-maccatalyst -c Release \
+            -p:ApplicationDisplayVersion=$VERSION -p:ApplicationVersion=$VERSION_CODE
+          ditto -c -k --keepParent Canora/bin/Release/net11.0-maccatalyst/Canora.app "Canora-$VERSION-mac.zip"
+          gh release upload "$GITHUB_REF_NAME" "Canora-$VERSION-mac.zip"

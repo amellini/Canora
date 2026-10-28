@@ -5,8 +5,8 @@
 <h1 align="center">Can'ora</h1>
 
 <p align="center">
-	A Spotify-style music and podcast player for Android and Windows, built with .NET MAUI.<br>
-	Un player di musica e podcast in stile Spotify per Android e Windows, scritto in .NET MAUI.
+	A Spotify-style music and podcast player for Android, Windows and macOS, built with .NET MAUI.<br>
+	Un player di musica e podcast in stile Spotify per Android, Windows e macOS, scritto in .NET MAUI.
 </p>
 
 <p align="center">
@@ -44,11 +44,14 @@ voice).
 
 ### Download
 
-Get the APK for Android and the zip for Windows from [Releases](https://github.com/amellini/Canora/releases).
+Get the APK for Android and the zips for Windows and macOS from [Releases](https://github.com/amellini/Canora/releases).
 
 - **Android 8.0 or later**: open the APK and allow installs from that source when Android asks.
 - **Windows 10 1809 or later**: unzip and run `Canora.exe`. The exe is not signed, so SmartScreen may ask you to
   confirm (*More info → Run anyway*).
+- **macOS 14 Sonoma or later** (experimental), Apple Silicon or Intel: unzip and move `Canora.app` to Applications. The
+  app is not notarized by Apple, so macOS blocks it the first time: open *System Settings → Privacy & Security* and
+  click *Open Anyway*, or run `xattr -dr com.apple.quarantine /Applications/Canora.app`.
 
 ### Features
 
@@ -67,10 +70,12 @@ Get the APK for Android and the zip for Windows from [Releases](https://github.c
   Android 16 AppFunctions (experimental), such as *"Riproduci &lt;song&gt; da Can'ora"*.
 - **Windows**: a plain unpackaged `.exe`, sidebar navigation, previous / play-pause / next buttons in the taskbar
   thumbnail, horizontal lists you can drag with the mouse.
+- **macOS** (experimental, through Mac Catalyst): the same desktop layout as Windows, and next / previous from the
+  media keys and Control Center.
 
 ### Under the hood
 
-- .NET 11 MAUI: one project for Android and Windows, CoreCLR, XAML source generation and compiled bindings.
+- .NET 11 MAUI: one project for Android, Windows and Mac Catalyst, CoreCLR, XAML source generation and compiled bindings.
 - [CommunityToolkit.Mvvm](https://github.com/CommunityToolkit/dotnet), [CommunityToolkit.Maui](https://github.com/CommunityToolkit/Maui)
   (MediaElement for playback).
 - [YoutubeExplode](https://github.com/Tyrrrz/YoutubeExplode) for YouTube search and audio streams.
@@ -104,6 +109,16 @@ dotnet build Canora/Canora.csproj -f net11.0-windows10.0.19041.0
 The app is `Canora/bin/Debug/net11.0-windows10.0.19041.0/win-x64/Canora.exe`. You can also open `Canora/Canora.slnx`
 in Visual Studio.
 
+macOS 14 or later, on a Mac with the `maui-maccatalyst` workload and the Xcode version that the .NET SDK requires (the
+build error names it: 27.0 for .NET 11 RC). `TargetFrameworks` limits the build to the Mac target, which otherwise
+also needs the Android workload:
+
+```bash
+dotnet build Canora/Canora.csproj -f net11.0-maccatalyst -p:TargetFrameworks=net11.0-maccatalyst
+```
+
+The app is `Canora.app` in `Canora/bin/Debug/net11.0-maccatalyst/`, in the folder of your Mac's architecture.
+
 ### Project layout
 
 ```
@@ -112,7 +127,7 @@ Canora/                 the .NET MAUI app
 	ViewModels/
 	Services/           catalog, YouTube matching, lyrics, podcasts, local database
 	Controls/           reusable views (cards, rows, popups)
-	Platforms/          Android and Windows specific code
+	Platforms/          Android, Windows and Mac specific code
 	Resources/          themes, fonts, icons
 docs/screenshots/       the images of this README
 ```
@@ -129,7 +144,7 @@ to ask for it.
 ### Disclaimer
 
 - **Educational purpose.** Can'ora is a personal project made for study and teaching: a hands-on example of .NET MAUI
-  development on Android and Windows and of how public web services work. It is not a commercial product and is not
+  development on Android, Windows and macOS and of how public web services work. It is not a commercial product and is not
   meant to replace any streaming service.
 - **Third-party services, including Google's.** The audio is streamed from **YouTube**, a Google service, through the
   YoutubeExplode library, which does not use the official YouTube API. The catalog comes from Deezer, lyrics from
@@ -159,11 +174,14 @@ L'interfaccia è in italiano. Il nome viene da *canora*, come in *voce canora*.
 
 ### Download
 
-L'APK per Android e lo zip per Windows sono nelle [Release](https://github.com/amellini/Canora/releases).
+L'APK per Android e gli zip per Windows e macOS sono nelle [Release](https://github.com/amellini/Canora/releases).
 
 - **Android 8.0 o successivo**: apri l'APK e consenti l'installazione da quella fonte quando Android lo chiede.
 - **Windows 10 1809 o successivo**: estrai lo zip e avvia `Canora.exe`. L'exe non è firmato, quindi SmartScreen può
   chiedere conferma (*Ulteriori informazioni → Esegui comunque*).
+- **macOS 14 Sonoma o successivo** (sperimentale), Apple Silicon o Intel: estrai lo zip e sposta `Canora.app` in
+  Applicazioni. L'app non è notarizzata da Apple, quindi macOS la blocca la prima volta: apri *Impostazioni di Sistema →
+  Privacy e sicurezza* e fai clic su *Apri comunque*, oppure lancia `xattr -dr com.apple.quarantine /Applications/Canora.app`.
 
 ### Funzionalità
 
@@ -183,10 +201,12 @@ L'APK per Android e lo zip per Windows sono nelle [Release](https://github.com/a
   le AppFunctions di Android 16 (sperimentali), per esempio *"Riproduci &lt;brano&gt; da Can'ora"*.
 - **Windows**: un semplice `.exe` non pacchettizzato, navigazione con la barra laterale, pulsanti precedente /
   play-pausa / successivo nell'anteprima della taskbar, liste orizzontali da trascinare con il mouse.
+- **macOS** (sperimentale, tramite Mac Catalyst): lo stesso layout desktop di Windows, e successivo / precedente dai
+  tasti multimediali e dal Centro di controllo.
 
 ### Com'è fatta
 
-- .NET 11 MAUI: un solo progetto per Android e Windows, CoreCLR, XAML generato a build time e binding compilati.
+- .NET 11 MAUI: un solo progetto per Android, Windows e Mac Catalyst, CoreCLR, XAML generato a build time e binding compilati.
 - [CommunityToolkit.Mvvm](https://github.com/CommunityToolkit/dotnet), [CommunityToolkit.Maui](https://github.com/CommunityToolkit/Maui)
   (MediaElement per la riproduzione).
 - [YoutubeExplode](https://github.com/Tyrrrz/YoutubeExplode) per la ricerca su YouTube e gli stream audio.
@@ -220,6 +240,16 @@ dotnet build Canora/Canora.csproj -f net11.0-windows10.0.19041.0
 L'app è `Canora/bin/Debug/net11.0-windows10.0.19041.0/win-x64/Canora.exe`. In alternativa apri `Canora/Canora.slnx` in
 Visual Studio.
 
+macOS 14 o successivo, su un Mac con il workload `maui-maccatalyst` e la versione di Xcode che chiede l'SDK di .NET
+(la nomina l'errore di build: 27.0 per .NET 11 RC). `TargetFrameworks` limita la build al target Mac, che altrimenti
+vorrebbe anche il workload Android:
+
+```bash
+dotnet build Canora/Canora.csproj -f net11.0-maccatalyst -p:TargetFrameworks=net11.0-maccatalyst
+```
+
+L'app è `Canora.app` in `Canora/bin/Debug/net11.0-maccatalyst/`, nella cartella dell'architettura del tuo Mac.
+
 ### Struttura
 
 ```
@@ -228,7 +258,7 @@ Canora/                 l'app .NET MAUI
 	ViewModels/
 	Services/           catalogo, abbinamento con YouTube, testi, podcast, database locale
 	Controls/           viste riusabili (card, righe, popup)
-	Platforms/          codice specifico di Android e Windows
+	Platforms/          codice specifico di Android, Windows e Mac
 	Resources/          temi, font, icone
 docs/screenshots/       le immagini di questo README
 ```
@@ -245,7 +275,7 @@ per chiederlo.
 ### Avvertenze
 
 - **Scopo didattico.** Can'ora è un progetto personale nato per studio e didattica: un esempio pratico di sviluppo con
-  .NET MAUI su Android e Windows e di come funzionano i servizi web pubblici. Non è un prodotto commerciale e non vuole
+  .NET MAUI su Android, Windows e macOS e di come funzionano i servizi web pubblici. Non è un prodotto commerciale e non vuole
   sostituire alcun servizio di streaming.
 - **Servizi di terze parti, compresi quelli di Google.** L'audio arriva in streaming da **YouTube**, un servizio di
   Google, tramite la libreria YoutubeExplode, che non usa l'API ufficiale di YouTube. Il catalogo arriva da Deezer, i
