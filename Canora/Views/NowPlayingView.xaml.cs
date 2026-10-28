@@ -34,8 +34,10 @@ public partial class NowPlayingView : ContentView
 		PlayerHero.TitleMargin = new Thickness(20, 0, 64, DesktopControls + 18);
 		AddButton.Margin = new Thickness(0, 0, 10, DesktopControls + 12);
 		Rail.SetDynamicResource(BoxView.ColorProperty, "ProgressTrack"); // SeekRail, scuro, sparisce sulla velatura
+#if WINDOWS
 		LinkStyle.Apply(RowArtistLabel);
 		LinkStyle.Apply(KaraokeArtistLabel);
+#endif
 #endif
 	}
 
