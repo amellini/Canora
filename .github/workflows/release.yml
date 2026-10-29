@@ -1,8 +1,10 @@
 name: Release
 
 # Un tag vX.Y.Z (git tag v1.0.0, poi git push origin v1.0.0) compila l'APK per Android e gli zip per Windows e per Mac
-# e li pubblica in una release con quel nome. Secrets del repo: ANDROID_KEYSTORE (il keystore in base64, alias "canora")
-# e ANDROID_KEYSTORE_PASSWORD (la stessa per keystore e chiave).
+# e li pubblica in una release con quel nome. Le note della release sono il messaggio del tag: annotato, con le novità
+# (git tag -a v1.2.0 --cleanup=verbatim -F note.md, verbatim per tenere i titoli "#"); un tag semplice usa il commit.
+# Secrets del repo: ANDROID_KEYSTORE (il keystore in base64, alias "canora") e ANDROID_KEYSTORE_PASSWORD (la stessa per
+# keystore e chiave).
 # YAML vieta i tab nell'indentazione: qui solo spazi.
 
 on:
@@ -71,7 +73,7 @@ jobs:
       - name: Release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create '${{ github.ref_name }}' "Canora-$env:VERSION.apk" "Canora-$env:VERSION-win-x64.zip" --title "Can'ora $env:VERSION" --generate-notes
+        run: gh release create '${{ github.ref_name }}' "Canora-$env:VERSION.apk" "Canora-$env:VERSION-win-x64.zip" --title "Can'ora $env:VERSION" --notes-from-tag
 
   mac:
     # Dopo la release, che c'è già con APK e zip per Windows: aggiunge lo zip per Mac. Se questo job fallisce, Android e
