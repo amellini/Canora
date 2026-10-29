@@ -13,7 +13,7 @@
 			</Grid.Triggers>
 			<Grid HeightRequest="61" VerticalOptions="Start">
 				<BoxView Fill="{DynamicResource PlaylistCover}" />
-				<Image Source="{Binding ImageUrl}" Aspect="AspectFill" />
+				<ShinyImage Uri="{Binding ImageUrl}" Aspect="AspectFill" />
 				<NowPlayingBadge x:Name="Playing" IsVisible="False" />
 			</Grid>
 			<VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="6">

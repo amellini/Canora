@@ -89,6 +89,9 @@
 	</Style>
 
 	<!-- Badge "LYRICS" → qui la durata: Gotham Bold 10 su #C4C4C4 -->
+	<!-- Badge CANALE dei canali YouTube: il rosso del marchio, uguale in tutti i temi (l'accento dei podcast cambia) -->
+	<Color x:Key="YouTubeRed">#FF0000</Color>
+
 	<Style x:Key="BadgeText" TargetType="Label">
 		<Setter Property="FontFamily" Value="MontserratBold" />
 		<Setter Property="FontSize" Value="10" />
@@ -140,6 +143,15 @@
 		<Setter Property="FontFamily" Value="MontserratBold" />
 		<Setter Property="FontSize" Value="12" />
 		<Setter Property="TextColor" Value="{DynamicResource TextPrimary}" />
+	</Style>
+
+	<!-- Copertine remote: niente anello di caricamento (su miniature da 40-60 px è rumore, e ha i colori del tema di
+	     Shiny); sotto c'è già il segnaposto col gradiente. Anche per CoverImage dell'Hero.
+	     Niente dissolvenza: parte da opacità 0, e se la vista viene staccata a metà (l'header della CollectionView
+	     ricreato all'arrivo degli episodi) l'animazione si ferma lì e l'immagine resta invisibile. -->
+	<Style TargetType="ShinyImage" ApplyToDerivedTypes="True">
+		<Setter Property="RingSize" Value="0" />
+		<Setter Property="FadeInDuration" Value="0" />
 	</Style>
 
 	<!-- Icone-maschera: bianche di default -->

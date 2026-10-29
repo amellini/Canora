@@ -28,9 +28,9 @@ public sealed partial record Track(string Id, string Title, string Artist, TimeS
 	public bool IsCatalog => Id.StartsWith(CatalogPrefix, StringComparison.Ordinal);
 
 	// Video YouTube: mqdefault, 16:9 senza bande nere, esiste per ogni video a differenza di maxresdefault.
-	// Episodi e brani del catalogo (anche dopo l'abbinamento): la loro copertina.
+	// Episodi (anche i video dei canali, il cui Id è la chiave dell'episodio) e brani del catalogo: la loro copertina.
 	[JsonIgnore]
-	public string ThumbUrl => ArtworkUrl.Contains("ytimg.com", StringComparison.Ordinal) ? $"https://i.ytimg.com/vi/{Id}/mqdefault.jpg" : ArtworkUrl;
+	public string ThumbUrl => !IsEpisode && ArtworkUrl.Contains("ytimg.com", StringComparison.Ordinal) ? $"https://i.ytimg.com/vi/{Id}/mqdefault.jpg" : ArtworkUrl;
 
 	[JsonIgnore]
 	public string DurationText => Duration is not { } d ? "" : d.TotalHours >= 1 ? d.ToString(@"h\:mm\:ss") : d.ToString(@"m\:ss");

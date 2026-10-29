@@ -6,7 +6,7 @@
 			 Background="{DynamicResource HomeBackground}">
 	<ContentView.Resources>
 		<!-- Card 173×175 + titolo + "Song . Artista" (Trending now / Top picks) -->
-		<Style x:Key="CardImage" TargetType="Image">
+		<Style x:Key="CardImage" TargetType="ShinyImage">
 			<Setter Property="Aspect" Value="AspectFill" />
 			<Setter Property="WidthRequest" Value="173" />
 			<Setter Property="HeightRequest" Value="175" />
@@ -50,7 +50,7 @@
 							<VerticalStackLayout Padding="15,0,0,0" WidthRequest="188" SemanticProperties.Description="{Binding Title}">
 								<Grid WidthRequest="173" HeightRequest="175">
 									<BoxView Fill="{DynamicResource PlaylistCover}" />
-									<Image Source="{Binding Cover}" Style="{StaticResource CardImage}" />
+									<ShinyImage Uri="{Binding Cover}" Style="{StaticResource CardImage}" />
 								</Grid>
 								<Label Text="{Binding Title}" Style="{StaticResource CardTitle}" Margin="0,18,0,0" />
 								<Label Text="{Binding Artist}" Style="{StaticResource CardSubtitle}" />
@@ -77,7 +77,7 @@
 					<CollectionView.ItemTemplate>
 						<DataTemplate x:DataType="Track">
 							<VerticalStackLayout Padding="15,0,0,0" WidthRequest="188">
-								<Image Source="{Binding ArtworkUrl}" Style="{StaticResource CardImage}" />
+								<ShinyImage Uri="{Binding ArtworkUrl}" Style="{StaticResource CardImage}" />
 								<Label Text="{Binding Title}" Style="{StaticResource CardTitle}" Margin="0,18,0,0" />
 								<Label Text="{Binding Artist, StringFormat='Brano · {0}'}" Style="{StaticResource CardSubtitle}" />
 								<VerticalStackLayout.GestureRecognizers>
@@ -107,7 +107,7 @@
 								<Grid WidthRequest="173" HeightRequest="175">
 									<BoxView Fill="{DynamicResource PlaylistCover}" />
 									<Image Source="ic_nav_library.png" WidthRequest="62" HeightRequest="41" Style="{StaticResource Icon}" IsVisible="{Binding NoCover}" />
-									<Image Source="{Binding Cover}" Style="{StaticResource CardImage}" IsVisible="{Binding HasCover}" />
+									<ShinyImage Uri="{Binding Cover}" Style="{StaticResource CardImage}" IsVisible="{Binding HasCover}" />
 								</Grid>
 								<Label Text="{Binding Name}" Style="{StaticResource CardTitle}" Margin="0,18,0,0" />
 								<Label Text="{Binding TracksText, StringFormat='Playlist · {0}'}" Style="{StaticResource CardSubtitle}" />

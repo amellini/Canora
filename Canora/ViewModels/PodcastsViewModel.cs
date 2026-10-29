@@ -140,14 +140,15 @@ public sealed partial class PodcastsViewModel : ObservableObject
 			if (cts.IsCancellationRequested)
 				return;
 			Show(merged, since);
+			var count = EpisodeCount(podcast, feed, merged);
 			Selected = (store.Find(podcast.Id) ?? Selected!) with
 			{
 				Description = feed.Description,
 				ArtworkUrl = string.IsNullOrWhiteSpace(feed.ImageUrl) ? Selected!.ArtworkUrl : feed.ImageUrl,
-				EpisodeCount = feed.Episodes.Count,
+				EpisodeCount = count,
 			};
 			if (followed is not null)
-				store.Refreshed(podcast.Id, feed.Description, feed.ImageUrl, feed.Episodes.Count, newCount: 0);
+				store.Refreshed(podcast.Id, feed.Description, feed.ImageUrl, count, newCount: 0);
 		}
 		catch (OperationCanceledException)
 		{
@@ -164,6 +165,10 @@ public sealed partial class PodcastsViewModel : ObservableObject
 		}
 	}
 
+	// Un feed RSS li ha tutti; di un canale YouTube si leggono solo gli ultimi, quindi contano quelli salvati.
+	static int EpisodeCount(Podcast podcast, PodcastService.Feed feed, List<Episode> merged) =>
+		podcast.IsYouTube ? merged.Count : feed.Episodes.Count;
+
 	// Gli episodi senza immagine propria mostrano la copertina del podcast.
 	void Show(List<Episode> episodes, DateTime? since)
 	{
@@ -173,7 +178,7 @@ public sealed partial class PodcastsViewModel : ObservableObject
 			Episodes.Add(e with
 			{
 				ImageUrl = e.ImageUrl ?? artwork,
-				IsNew = since is { } s && e.Published > s && !e.Listened && e.Position == 0,
+				IsNew = since is { } s && e.Published > s && !e.DateUnknown && !e.Listened && e.Position == 0,
 			});
 	}
 
@@ -266,10 +271,13 @@ public sealed partial class PodcastsViewModel : ObservableObject
 		{
 			try
 			{
-				var feed = await Task.Run(() => service.FetchAsync(podcast, CancellationToken.None));
-				await Task.Run(() => store.MergeFeed(podcast.Id, feed.Episodes));
+				var feed = await Task.Run(() => service.FetchAsync(podcast, CancellationToken.None, latest: true));
+				var merged = await Task.Run(() => store.MergeFeed(podcast.Id, feed.Episodes));
 				var since = (store.Find(podcast.Id) ?? podcast).LastOpened ?? podcast.FollowedAt;
-				store.Refreshed(podcast.Id, feed.Description, feed.ImageUrl, feed.Episodes.Count, feed.Episodes.Count(e => e.Published > since));
+				// ponytail: un canale dà la data vera ai suoi ultimi 15 video e 15 dirette (RSS); una diretta programmata
+				// prima dell'ultima apertura e trasmessa dopo non conta come nuova.
+				store.Refreshed(podcast.Id, feed.Description, feed.ImageUrl, EpisodeCount(podcast, feed, merged),
+					feed.Episodes.Count(e => e.Published > since && !e.DateUnknown));
 			}
 			catch (Exception ex)
 			{

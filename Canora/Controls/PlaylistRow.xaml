@@ -7,7 +7,7 @@
 		<Grid>
 			<BoxView Fill="{DynamicResource PlaylistCover}" />
 			<Image Source="ic_nav_library.png" WidthRequest="31" HeightRequest="20" Style="{StaticResource Icon}" IsVisible="{Binding NoCover}" />
-			<Image Source="{Binding Cover}" Aspect="AspectFill" IsVisible="{Binding HasCover}" />
+			<ShinyImage Uri="{Binding Cover}" Aspect="AspectFill" IsVisible="{Binding HasCover}" />
 		</Grid>
 		<VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="6">
 			<Label Text="{Binding Name}" Style="{StaticResource RowTitle}" />

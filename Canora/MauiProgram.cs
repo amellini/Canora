@@ -3,6 +3,8 @@ using Microsoft.Extensions.Logging;
 using Canora.Controls;
 using Canora.Services;
 using Canora.ViewModels;
+using Shiny;
+using Shiny.Maui.Controls.Images;
 using YoutubeExplode;
 
 namespace Canora;
@@ -20,6 +22,8 @@ public static class MauiProgram
 #endif
 			// true = foreground service: riproduzione in background, notifica e controlli in lockscreen.
 			.UseMauiCommunityToolkitMediaElement(isAndroidForegroundServiceEnabled: true)
+			// IImageService di ShinyImage: copertine in cache su memoria e disco, condivise con ArtworkColor.
+			.UseShinyControls()
 			.ConfigureFonts(fonts =>
 			{
 				// Montserrat sostituisce Gotham (proprietario) del Figma; Poppins è quello del design.
@@ -86,6 +90,9 @@ public static class MauiProgram
 		builder.Services.AddSingleton<PodcastService>();
 		builder.Services.AddSingleton<CatalogService>();
 		builder.Services.AddSingleton<LyricsService>();
+		// Sostituisce quello di UseShinyControls (registrato con TryAdd): stesse opzioni e downloader, senza progress.
+		builder.Services.AddSingleton<IImageService>(sp => new QuietImageService(
+			new ImageService(sp.GetRequiredService<ImageOptions>(), sp.GetRequiredService<IImageDownloader>(), sp.GetService<TimeProvider>())));
 		builder.Services.AddSingleton<PlayerViewModel>();
 		builder.Services.AddSingleton<CatalogViewModel>();
 		builder.Services.AddSingleton<SearchViewModel>();

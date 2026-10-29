@@ -7,3 +7,5 @@
 [assembly: XmlnsDefinition("http://schemas.microsoft.com/dotnet/maui/global", "Canora.Views")]
 [assembly: XmlnsDefinition("http://schemas.microsoft.com/dotnet/maui/global", "CommunityToolkit.Maui.Views", AssemblyName = "CommunityToolkit.Maui.MediaElement")]
 [assembly: XmlnsDefinition("http://schemas.microsoft.com/dotnet/maui/global", "Canora.Theming")]
+// ShinyImage per le copertine remote (cache condivisa con ArtworkColor).
+[assembly: XmlnsDefinition("http://schemas.microsoft.com/dotnet/maui/global", "Shiny.Maui.Controls.Images", AssemblyName = "Shiny.Maui.Controls")]

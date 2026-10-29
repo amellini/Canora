@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <!-- Dettaglio podcast, sullo schema della "Playlist Screen" del Figma come il dettaglio playlist: hero con back,
-     titolo e autore sopra la copertina, badge PODCAST + episodi, Segui/Smetti di seguire, ⋮, play verde, descrizione, episodi.
+     titolo e autore sopra la copertina, badge PODCAST/CANALE + episodi, Segui/Smetti di seguire, ⋮, play verde, descrizione, episodi.
      Sta sopra i tab ma sotto mini-player e nav (vedi MainPage). -->
 <ContentView x:Class="Canora.Views.PodcastDetailView"
 			 x:DataType="PodcastsViewModel"
@@ -26,7 +26,18 @@
 					<VerticalStackLayout Padding="18,0">
 						<Grid ColumnDefinitions="Auto,*" ColumnSpacing="6" Margin="0,16,0,0">
 							<Border BackgroundColor="{DynamicResource Accent}" StrokeThickness="0" StrokeShape="RoundRectangle 2" Padding="3,1" VerticalOptions="Center">
-								<Label Text="PODCAST" Style="{StaticResource BadgeText}" />
+								<Border.Triggers>
+									<DataTrigger TargetType="Border" Binding="{Binding Selected.IsYouTube}" Value="True">
+										<Setter Property="BackgroundColor" Value="{StaticResource YouTubeRed}" />
+									</DataTrigger>
+								</Border.Triggers>
+								<Label Text="{Binding Selected.Kind}" Style="{StaticResource BadgeText}">
+									<Label.Triggers>
+										<DataTrigger TargetType="Label" Binding="{Binding Selected.IsYouTube}" Value="True">
+											<Setter Property="TextColor" Value="White" />
+										</DataTrigger>
+									</Label.Triggers>
+								</Label>
 							</Border>
 							<Label Grid.Column="1" Text="{Binding Selected.EpisodesText}" Style="{StaticResource Description}" VerticalOptions="Center" />
 						</Grid>
@@ -60,9 +71,9 @@
 							<PlayAllButton Grid.Column="3" Items="{Binding Episodes}" Command="{Binding PlayLatestCommand}" />
 						</Grid>
 
-						<Label Text="{Binding Selected.Description}" Style="{StaticResource Caption}" MaxLines="4" LineBreakMode="TailTruncation" Margin="0,16,0,0" />
+						<Label Text="{Binding Selected.Description}" Style="{StaticResource Caption}" MaxLines="4" LineBreakMode="TailTruncation" Margin="0,16,0,0" IsVisible="{Binding Selected.HasDescription}" />
 						<ActivityIndicator IsRunning="{Binding IsLoadingEpisodes}" IsVisible="{Binding IsLoadingEpisodes}" Margin="0,24,0,0" />
-						<Label Text="Impossibile leggere il feed del podcast. Controlla la connessione." Style="{StaticResource Caption}" HorizontalTextAlignment="Center" Margin="0,24,0,0" IsVisible="{Binding FeedFailed}" />
+						<Label Text="Impossibile caricare gli episodi. Controlla la connessione." Style="{StaticResource Caption}" HorizontalTextAlignment="Center" Margin="0,24,0,0" IsVisible="{Binding FeedFailed}" />
 					</VerticalStackLayout>
 				</VerticalStackLayout>
 			</CollectionView.Header>

@@ -78,6 +78,9 @@
 		<!-- Playlist e recenti. Come in ChuckWalker: la 1.11 porta da sé SQLitePCLRaw 3 + SourceGear.sqlite3 e non
 		     vuole SQLitePCLRaw.bundle_green (che aggiungerebbe un secondo libe_sqlite3.so e due avvisi NU1903). -->
 		<PackageReference Include="sqlite-net-pcl" Version="1.11.285" />
+		<!-- ShinyImage per le copertine remote: cache in memoria e su disco condivisa con ArtworkColor (un download per
+		     copertina, non due). Mac Catalyst non ha un asset suo e usa quello net10.0. -->
+		<PackageReference Include="Shiny.Maui.Controls" Version="2.1.0" />
 	</ItemGroup>
 
 	<!-- Icone dei pulsanti nell'anteprima della taskbar (Platforms/Windows/Taskbar.cs): accanto all'exe, LoadImage
@@ -89,8 +92,8 @@
 	<!-- Comandi vocali dall'assistente del telefono (Android 16+ AppFunctions): il generatore scrive registrazione,
 	     schema XML e servizio; Hosting.Maui dà UseShiny(). Solo Android, come Platforms/Android/AssistantFunctions.cs. -->
 	<ItemGroup Condition="'$([MSBuild]::GetTargetPlatformIdentifier($(TargetFramework)))' == 'android'">
-		<PackageReference Include="Shiny.Hosting.Maui" Version="6.3.1" />
-		<PackageReference Include="Shiny.AppFunctions" Version="6.3.1" />
+		<PackageReference Include="Shiny.Hosting.Maui" Version="6.4.0" />
+		<PackageReference Include="Shiny.AppFunctions" Version="6.4.0" />
 	</ItemGroup>
 
 </Project>

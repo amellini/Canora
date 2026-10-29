@@ -1,3 +1,4 @@
+using Shiny.Maui.Controls.Images;
 using Color = Microsoft.Maui.Graphics.Color;
 
 namespace Canora.Services;
@@ -8,11 +9,10 @@ namespace Canora.Services;
 static partial class ArtworkColor
 {
 	const int Size = 24;
-	static readonly HttpClient Http = new();
 
 	public static async Task<Color> FromUrlAsync(string url, CancellationToken token)
 	{
-		var bytes = await Http.GetByteArrayAsync(url, token);
+		var bytes = await BytesAsync(url, token);
 		return Dominant(await Task.Run(() => PixelsAsync(bytes, null), token));
 	}
 
@@ -20,8 +20,19 @@ static partial class ArtworkColor
 	// dell'immagine in un riquadro di proporzioni `frame` (larghezza/altezza) con AspectFill.
 	public static async Task<(double Top, double Bottom)> LightnessAsync(string url, double frame, CancellationToken token)
 	{
-		var bytes = await Http.GetByteArrayAsync(url, token);
+		var bytes = await BytesAsync(url, token);
 		return Lightness(await Task.Run(() => PixelsAsync(bytes, frame), token));
+	}
+
+	// Dalla cache di ShinyImage: la copertina che si vede e quella che si misura sono un solo download (e una
+	// richiesta sola anche quando partono insieme). Le immagini grandi la cache le tiene solo su disco.
+	static async Task<byte[]> BytesAsync(string url, CancellationToken token)
+	{
+		var images = IPlatformApplication.Current!.Services.GetRequiredService<IImageService>();
+		var result = await images.GetAsync(new ImageRequest(url), null, token);
+		if (!result.Success)
+			throw result.Error ?? new IOException($"Copertina non scaricata: {url}");
+		return result.Bytes ?? await File.ReadAllBytesAsync(result.FilePath!, token);
 	}
 
 	// Miniatura Size×Size riga per riga: di tutta l'immagine (frame null) o della sola parte Visible.

@@ -82,7 +82,8 @@ public sealed class PodcastStore
 		db.Run(c => c.Table<EpisodeEntity>().Where(e => e.PodcastId == podcastId).ToList())?
 			.Select(e => e.ToEpisode()).OrderByDescending(e => e.Published).ToList() ?? [];
 
-	// Unisce il feed appena letto alla cache: aggiorna titoli/URL, non tocca posizione e "ascoltato".
+	// Unisce il feed appena letto alla cache: aggiorna titoli/URL, non tocca posizione e "ascoltato". Una data vera già
+	// salvata non si sostituisce con una inventata (video di un canale uscito dal feed RSS, vedi PodcastService).
 	public List<Episode> MergeFeed(string podcastId, List<Episode> fromFeed)
 	{
 		db.Run(c =>
@@ -91,11 +92,13 @@ public sealed class PodcastStore
 			{
 				foreach (var e in fromFeed)
 					c.Execute("""
-						INSERT INTO Episodes (Key, PodcastId, Title, AudioUrl, Published, DurationTicks, ImageUrl, Position, Listened)
-						VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0)
+						INSERT INTO Episodes (Key, PodcastId, Title, AudioUrl, Published, DurationTicks, ImageUrl, Position, Listened, DateUnknown)
+						VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, ?)
 						ON CONFLICT(Key) DO UPDATE SET Title = excluded.Title, AudioUrl = excluded.AudioUrl,
-							Published = excluded.Published, DurationTicks = excluded.DurationTicks, ImageUrl = excluded.ImageUrl
-						""", e.Key, e.PodcastId, e.Title, e.AudioUrl, e.Published, e.Duration?.Ticks, e.ImageUrl);
+							Published = CASE WHEN excluded.DateUnknown = 1 AND IFNULL(DateUnknown, 0) = 0 THEN Published ELSE excluded.Published END,
+							DateUnknown = excluded.DateUnknown AND IFNULL(DateUnknown, 0),
+							DurationTicks = excluded.DurationTicks, ImageUrl = excluded.ImageUrl
+						""", e.Key, e.PodcastId, e.Title, e.AudioUrl, e.Published, e.Duration?.Ticks, e.ImageUrl, e.DateUnknown);
 			});
 			return true;
 		});
@@ -172,7 +175,8 @@ sealed class EpisodeEntity
 	public string? ImageUrl { get; set; }
 	public double Position { get; set; }
 	public bool Listened { get; set; }
+	public bool DateUnknown { get; set; } // colonna aggiunta da CreateTable ai database esistenti (NULL = falso)
 
 	public Episode ToEpisode() => new(Key, PodcastId, Title, AudioUrl, Published,
-		DurationTicks is { } ticks ? TimeSpan.FromTicks(ticks) : null, ImageUrl, Position, Listened);
+		DurationTicks is { } ticks ? TimeSpan.FromTicks(ticks) : null, ImageUrl, Position, Listened) { DateUnknown = DateUnknown };
 }

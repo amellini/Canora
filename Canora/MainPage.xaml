@@ -83,11 +83,11 @@
 				<!-- Mini-player (non nel Figma): colore della copertina, come Spotify -->
 				<Border IsVisible="{Binding HasTrack}" Margin="8,0,8,6" Padding="8,8,8,4" StrokeThickness="0" StrokeShape="RoundRectangle 6" BackgroundColor="{Binding AccentDeep}">
 					<Grid ColumnDefinitions="40,*,Auto,40,32,40,32" RowDefinitions="40,Auto" ColumnSpacing="8">
-						<Image Source="{Binding Current.ThumbUrl}" Aspect="AspectFill">
-							<Image.Clip>
+						<ShinyImage Uri="{Binding Current.ThumbUrl}" Aspect="AspectFill">
+							<ShinyImage.Clip>
 								<RoundRectangleGeometry Rect="0,0,40,40" CornerRadius="4" />
-							</Image.Clip>
-						</Image>
+							</ShinyImage.Clip>
+						</ShinyImage>
 						<VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="1" Margin="4,0,0,0">
 							<Label Text="{Binding Current.Title}" Style="{StaticResource MiniTitle}" />
 							<Label Text="{Binding Current.Artist}" Style="{StaticResource MiniArtist}" />

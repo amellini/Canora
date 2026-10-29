@@ -1,5 +1,6 @@
 using System.Windows.Input;
 using Canora.Services;
+using Shiny.Maui.Controls.Images;
 using Color = Microsoft.Maui.Graphics.Color;
 
 namespace Canora.Controls;
@@ -41,7 +42,7 @@ public sealed class Hero : Grid
 	// Tocco sul sottotitolo (nel player: l'artista, che apre la sua scheda).
 	public event EventHandler? SubtitleTapped;
 
-	readonly Image picture = new CoverImage { Aspect = Aspect.AspectFill };
+	readonly CoverImage picture = new() { Aspect = Aspect.AspectFill };
 	readonly BoxView topShade = new();
 	readonly BoxView bottomShade = new();
 	readonly Label title = new() { FontFamily = "MontserratBold", FontSize = 26, CharacterSpacing = -0.8, MaxLines = 2, LineBreakMode = LineBreakMode.TailTruncation, VerticalOptions = LayoutOptions.Center };
@@ -140,7 +141,7 @@ public sealed class Hero : Grid
 	void OnSourceChanged()
 	{
 		var url = Source;
-		picture.Source = string.IsNullOrWhiteSpace(url) ? null : ImageSource.FromUri(new Uri(url));
+		picture.Uri = string.IsNullOrWhiteSpace(url) ? null : url;
 		MeasureLightness();
 	}
 
@@ -158,7 +159,8 @@ public sealed class Hero : Grid
 	// L'immagine riempie la cella che riceve ma non chiede spazio: una copertina quadrata in AspectFill chiederebbe
 	// un'altezza pari alla larghezza, e con HeightRequest="-1" (player espanso) nella finestra larga di Windows la Grid
 	// del player la distribuiva sulle righe dell'hero, spingendo barra, tempi e pulsanti fuori dallo schermo.
-	sealed class CoverImage : Image
+	// ShinyImage: la stessa cache da cui ArtworkColor misura la luminosità, quindi un download solo.
+	sealed class CoverImage : ShinyImage
 	{
 		// La misura della piattaforma serve comunque: un'Image di WinUI mai misurata può non disegnarsi.
 		protected override Size MeasureOverride(double widthConstraint, double heightConstraint)

@@ -8,7 +8,9 @@
 			 x:DataType="Track">
 	<Grid x:Name="RowGrid" ColumnDefinitions="61,*,36" ColumnSpacing="8" HeightRequest="65">
 		<Grid x:Name="Cover" WidthRequest="61" HeightRequest="61" VerticalOptions="Center">
-			<Image Source="{Binding ThumbUrl}" Aspect="AspectFill" />
+			<!-- Finché la copertina non c'è (o se manca) il riquadro, come nelle altre righe -->
+			<BoxView Fill="{DynamicResource PlaylistCover}" />
+			<ShinyImage Uri="{Binding ThumbUrl}" Aspect="AspectFill" />
 			<NowPlayingBadge x:Name="Playing" IsVisible="False" />
 		</Grid>
 		<VerticalStackLayout x:Name="Texts" Grid.Column="1" VerticalOptions="Center" Spacing="6">

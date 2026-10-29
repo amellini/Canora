@@ -79,7 +79,7 @@ sealed class PlayLatestEpisodeHandler(PodcastStore store, PodcastService service
 		List<Episode> episodes;
 		try
 		{
-			var feed = await service.FetchAsync(podcast, cancellationToken);
+			var feed = await service.FetchAsync(podcast, cancellationToken, latest: true);
 			episodes = store.MergeFeed(podcast.Id, feed.Episodes);
 		}
 		catch (Exception) when (!cancellationToken.IsCancellationRequested)

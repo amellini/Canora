@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using CommunityToolkit.Maui.Core;
 using CommunityToolkit.Maui.Views;
@@ -201,6 +202,12 @@ public sealed partial class PlayerViewModel(YoutubeClient youtube, LibraryStore 
 		if (IsPlaying)
 		{
 			failures = 0;
+			// Partito il brano: ora, senza togliergli banda, si preparano i prossimi.
+			if (prefetchedFor != index && loading is { } cts)
+			{
+				prefetchedFor = index;
+				_ = PrefetchAsync(cts.Token);
+			}
 			// Episodio già iniziato: si riprende da dove lo si era lasciato.
 			if (resumeAt > 0 && player is not null)
 			{
@@ -298,6 +305,8 @@ public sealed partial class PlayerViewModel(YoutubeClient youtube, LibraryStore 
 			i = 0;
 		}
 		failures = 0;
+		shuffleNext = null;
+		prefetchedFor = -1;
 		return LoadAsync(i, picked: true);
 	}
 
@@ -325,7 +334,9 @@ public sealed partial class PlayerViewModel(YoutubeClient youtube, LibraryStore 
 
 		try
 		{
-			if (track.AudioUrl is { } audioUrl)
+			// Video di un canale YouTube seguito come podcast: episodio per posizione e "ascoltato", audio da YouTube.
+			var episodeVideo = track.AudioUrl is { } episodeAudio ? Episode.VideoIdOf(episodeAudio) : null;
+			if (track.AudioUrl is { } audioUrl && episodeVideo is null)
 			{
 				// Episodio: audio diretto dal feed, niente YoutubeExplode.
 				var uri = await Task.Run(() => PodcastService.ResolveAudioAsync(audioUrl, cts.Token), cts.Token);
@@ -354,9 +365,13 @@ public sealed partial class PlayerViewModel(YoutubeClient youtube, LibraryStore 
 				Current = track;
 				NowPlaying.Set(fromCatalog, track.Id); // le righe del catalogo restano evidenziate anche dopo l'abbinamento
 			}
-			if (picked)
-				library.AddRecent(track); // "Ascoltati di recente" è per i brani
-			_ = LoadLyricsAsync(track, cts.Token); // titolo, artista e durata del catalogo quando ci sono: li cerca meglio
+			if (episodeVideo is null)
+			{
+				if (picked)
+					library.AddRecent(track); // "Ascoltati di recente" è per i brani
+				_ = LoadLyricsAsync(track, cts.Token); // titolo, artista e durata del catalogo quando ci sono: li cerca meglio
+			}
+			var videoId = episodeVideo ?? track.Id;
 
 			// Su un thread del pool: altrimenti le continuation di YoutubeExplode tornano sul thread UI e Android
 			// rifiuta la chiusura delle risposte HTTP lì (NetworkOnMainThreadException).
@@ -366,7 +381,7 @@ public sealed partial class PlayerViewModel(YoutubeClient youtube, LibraryStore 
 			// .NET resta in Opening, mentre l'URL il player di sistema lo scarica da sé con richieste Range, seek compreso.
 			var url = await Task.Run(async () =>
 			{
-				var manifest = await youtube.Videos.Streams.GetManifestAsync(track.Id, cts.Token);
+				var manifest = await ManifestAsync(videoId).WaitAsync(cts.Token);
 				var audio = manifest.GetAudioOnlyStreams().Where(s => s.Container == Container.Mp4).TryGetWithHighestBitrate()
 					?? manifest.GetAudioOnlyStreams().GetWithHighestBitrate();
 				return audio.Url;
@@ -377,7 +392,7 @@ public sealed partial class PlayerViewModel(YoutubeClient youtube, LibraryStore 
 #else
 			var next = await Task.Run(async () =>
 			{
-				var manifest = await youtube.Videos.Streams.GetManifestAsync(track.Id, cts.Token);
+				var manifest = await ManifestAsync(videoId).WaitAsync(cts.Token);
 				var audio = manifest.GetAudioOnlyStreams().GetWithHighestBitrate();
 				// GetAsync e non audio.Url: lo stream di YoutubeExplode scarica a segmenti con Range (anti-throttling)
 				// ed è seekable, quindi ExoPlayer può fare seek senza riscaricare tutto.
@@ -393,7 +408,7 @@ public sealed partial class PlayerViewModel(YoutubeClient youtube, LibraryStore 
 			player.MetadataTitle = track.Title;
 			player.MetadataArtist = track.Artist;
 			player.MetadataArtworkUrl = track.ThumbUrl;
-			player.ShouldLoopPlayback = Repeat == RepeatMode.One;
+			player.ShouldLoopPlayback = episodeVideo is null && Repeat == RepeatMode.One; // negli episodi il ripeti non c'è
 #if WINDOWS || MACCATALYST
 			player.Source = MediaSource.FromUri(url);
 #else
@@ -412,6 +427,80 @@ public sealed partial class PlayerViewModel(YoutubeClient youtube, LibraryStore 
 			IsLoading = false;
 			Fail();
 		}
+	}
+
+	// Manifest degli stream YouTube per video: è la parte lenta del cambio brano (2-5 s, contro ~0,2 s per aprire lo
+	// stream e leggerne l'inizio), quindi si chiede in anticipo per i prossimi della coda e si riusa. La richiesta non
+	// si annulla con chi la aspetta: il risultato serve comunque. Gli URL degli stream scadono dopo ~6 ore.
+	// ponytail: dopo un'ora si richiede; se mai un URL scaduto prima, si scarterebbe al primo errore di GetAsync.
+	readonly ConcurrentDictionary<string, (Task<StreamManifest> Manifest, DateTime At)> manifests = new();
+
+	Task<StreamManifest> ManifestAsync(string videoId)
+	{
+		if (manifests.TryGetValue(videoId, out var cached) && DateTime.Now - cached.At < TimeSpan.FromHours(1) && !cached.Manifest.IsFaulted && !cached.Manifest.IsCanceled)
+			return cached.Manifest;
+		foreach (var old in manifests.Where(m => DateTime.Now - m.Value.At >= TimeSpan.FromHours(1)))
+			manifests.TryRemove(old.Key, out _);
+		var fetch = Task.Run(() => youtube.Videos.Streams.GetManifestAsync(videoId).AsTask());
+		manifests[videoId] = (fetch, DateTime.Now);
+		return fetch;
+	}
+
+	// Il brano su cui si sono già preparati i successivi, e il prossimo del casuale, scelto prima per poterlo preparare.
+	int prefetchedFor = -1;
+	int? shuffleNext;
+
+	// I prossimi due della coda (uno col casuale): video abbinato (brani del catalogo, ~1 s la prima volta) e manifest,
+	// uno alla volta. Lo stream audio no: si apre al cambio. Un altro cambio di brano annulla quello che resta.
+	async Task PrefetchAsync(CancellationToken token)
+	{
+		foreach (var track in Upcoming().Select(k => queue[k]).ToList())
+		{
+			try
+			{
+				if (track.IsEpisode)
+					continue;
+				var video = await Task.Run(() => catalog.MatchAsync(track, token), token);
+				await ManifestAsync(video.Id).WaitAsync(token);
+			}
+			catch (OperationCanceledException)
+			{
+				return;
+			}
+			catch (Exception ex)
+			{
+				Debug.WriteLine($"Precaricamento non riuscito: {ex.Message}"); // al cambio si riprova da capo
+			}
+		}
+	}
+
+	IEnumerable<int> Upcoming()
+	{
+		if (IsShuffle && queue.Count > 1)
+		{
+			yield return shuffleNext ??= RandomOther();
+			yield break;
+		}
+		for (var step = 1; step <= 2 && step < queue.Count; step++)
+		{
+			var k = index + step;
+			if (k >= queue.Count)
+			{
+				if (Repeat != RepeatMode.All)
+					yield break;
+				k -= queue.Count;
+			}
+			yield return k;
+		}
+	}
+
+	int RandomOther()
+	{
+		int next;
+		do
+			next = Random.Shared.Next(queue.Count);
+		while (next == index);
+		return next;
 	}
 
 	// Brano non riproducibile (rimosso, con restrizioni d'età, rete assente…): avvisa e passa al successivo,
@@ -497,10 +586,9 @@ public sealed partial class PlayerViewModel(YoutubeClient youtube, LibraryStore 
 			return Task.CompletedTask;
 		if (IsShuffle && queue.Count > 1)
 		{
-			int next;
-			do
-				next = Random.Shared.Next(queue.Count);
-			while (next == index);
+			// Quello già scelto (e preparato) da Upcoming, se c'è.
+			var next = shuffleNext is { } chosen && chosen != index && chosen < queue.Count ? chosen : RandomOther();
+			shuffleNext = null;
 			return LoadAsync(next);
 		}
 		if (index + 1 < queue.Count)

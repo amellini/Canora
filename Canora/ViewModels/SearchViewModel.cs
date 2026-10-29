@@ -5,9 +5,6 @@ using CommunityToolkit.Mvvm.Input;
 using Canora.Models;
 using Canora.Services;
 using Canora.Theming;
-using YoutubeExplode;
-using YoutubeExplode.Common;
-using YoutubeExplode.Search;
 
 namespace Canora.ViewModels;
 
@@ -20,16 +17,14 @@ public sealed record Tile(string Title, int Shade, string Query, string? Image =
 
 public sealed partial class SearchViewModel : ObservableObject
 {
-	readonly YoutubeClient youtube;
 	readonly PlayerViewModel player;
 	readonly LibraryStore library;
 	readonly CatalogService catalog;
 	readonly PodcastService podcastService;
 
-	public SearchViewModel(YoutubeClient youtube, PlayerViewModel player, LibraryStore library, CatalogService catalog,
+	public SearchViewModel(PlayerViewModel player, LibraryStore library, CatalogService catalog,
 		PodcastService podcastService, PodcastsViewModel podcasts, CatalogViewModel catalogView)
 	{
-		this.youtube = youtube;
 		this.player = player;
 		this.library = library;
 		this.catalog = catalog;
@@ -44,8 +39,6 @@ public sealed partial class SearchViewModel : ObservableObject
 		};
 	}
 
-	// Una pagina di risultati per richiesta; l'enumeratore resta aperto per lo scroll infinito.
-	IAsyncEnumerator<Batch<ISearchResult>>? pages;
 	CancellationTokenSource? typing;
 
 	public PlayerViewModel Player => player;
@@ -53,42 +46,42 @@ public sealed partial class SearchViewModel : ObservableObject
 	public PodcastsViewModel Podcasts { get; }
 	public CatalogViewModel Catalog { get; }
 
-	// --- Risultati raggruppati come Spotify: «Dalle tue playlist», Artisti, Album, Brani, Playlist, Podcast, poi YouTube ---
+	// --- Risultati raggruppati come Spotify: «Dalle tue playlist», Artisti, Canali, Album, Brani, Playlist, Podcast ---
 
 	public ObservableCollection<CatalogArtist> Artists { get; } = [];
 	public ObservableCollection<CatalogAlbum> Albums { get; } = [];
 	public ObservableCollection<Track> Songs { get; } = [];
 	public ObservableCollection<Podcast> PodcastResults { get; } = [];
 
+	// Canali YouTube: si mostrano come gli artisti e si aprono (e si seguono) come i podcast.
+	public ObservableCollection<Podcast> Channels { get; } = [];
+
 	// Playlist di Deezer (per genere e per testo) e di YouTube; si aprono nella pagina album.
 	public ObservableCollection<CatalogAlbum> CatalogPlaylists { get; } = [];
 
 	// Pillole sotto la barra: tutte spente all'inizio, e allora si vede tutto; accenderne qualcuna restringe la
-	// ricerca alle sole sezioni accese. "Brani" comprende anche «Dalle tue playlist» e i video di YouTube.
-	// Ogni pillola cambia anche le altre sezioni (accendere la prima nasconde tutte le altre), quindi tutte
-	// avvisano VisibleResults.
+	// ricerca alle sole sezioni accese. "Brani" comprende anche «Dalle tue playlist».
 	[ObservableProperty]
-	[NotifyPropertyChangedFor(nameof(VisibleResults))]
 	public partial bool ShowArtists { get; private set; }
 
 	[ObservableProperty]
-	[NotifyPropertyChangedFor(nameof(VisibleResults))]
+	public partial bool ShowChannels { get; private set; }
+
+	[ObservableProperty]
 	public partial bool ShowAlbums { get; private set; }
 
 	[ObservableProperty]
-	[NotifyPropertyChangedFor(nameof(VisibleResults))]
 	public partial bool ShowSongs { get; private set; }
 
 	[ObservableProperty]
-	[NotifyPropertyChangedFor(nameof(VisibleResults))]
 	public partial bool ShowPodcasts { get; private set; }
 
 	[ObservableProperty]
-	[NotifyPropertyChangedFor(nameof(VisibleResults))]
 	public partial bool ShowPlaylists { get; private set; }
 
-	bool AllSections => !(ShowArtists || ShowAlbums || ShowSongs || ShowPodcasts || ShowPlaylists);
+	bool AllSections => !(ShowArtists || ShowChannels || ShowAlbums || ShowSongs || ShowPodcasts || ShowPlaylists);
 	bool IncludeArtists => AllSections || ShowArtists;
+	bool IncludeChannels => AllSections || ShowChannels;
 	bool IncludeAlbums => AllSections || ShowAlbums;
 	bool IncludeSongs => AllSections || ShowSongs;
 	bool IncludePodcasts => AllSections || ShowPodcasts;
@@ -100,6 +93,7 @@ public sealed partial class SearchViewModel : ObservableObject
 		switch (filter)
 		{
 			case "artists": ShowArtists = !ShowArtists; break;
+			case "channels": ShowChannels = !ShowChannels; break;
 			case "albums": ShowAlbums = !ShowAlbums; break;
 			case "songs": ShowSongs = !ShowSongs; break;
 			case "podcasts": ShowPodcasts = !ShowPodcasts; break;
@@ -109,31 +103,28 @@ public sealed partial class SearchViewModel : ObservableObject
 	}
 
 	public bool ArtistsVisible => IncludeArtists && Artists.Count > 0;
+	public bool ChannelsVisible => IncludeChannels && Channels.Count > 0;
 	public bool AlbumsVisible => IncludeAlbums && Albums.Count > 0;
 	public bool SongsVisible => IncludeSongs && Songs.Count > 0;
 	public bool PodcastsVisible => IncludePodcasts && PodcastResults.Count > 0;
 	public bool PlaylistsVisible => IncludePlaylists && CatalogPlaylists.Count > 0;
 	public bool PlaylistMatchesVisible => IncludeSongs && HasPlaylistMatches;
-	public bool YouTubeVisible => IncludeSongs && Results.Count > 0;
-
-	// I video di YouTube sono gli elementi della lista (scroll infinito): se i brani sono esclusi, lista vuota.
-	public IList<Track> VisibleResults => IncludeSongs ? Results : [];
 
 	[ObservableProperty]
 	public partial bool IsLoadingCatalog { get; private set; }
 
-	public bool NoResults => HasQuery && !IsBusy && !IsLoadingCatalog && !HasError
-		&& !(ArtistsVisible || AlbumsVisible || SongsVisible || PodcastsVisible || PlaylistsVisible || PlaylistMatchesVisible || YouTubeVisible);
+	public bool NoResults => HasQuery && !IsLoadingCatalog
+		&& !(ArtistsVisible || ChannelsVisible || AlbumsVisible || SongsVisible || PodcastsVisible || PlaylistsVisible || PlaylistMatchesVisible);
 
 	void Refresh()
 	{
 		OnPropertyChanged(nameof(ArtistsVisible));
+		OnPropertyChanged(nameof(ChannelsVisible));
 		OnPropertyChanged(nameof(AlbumsVisible));
 		OnPropertyChanged(nameof(SongsVisible));
 		OnPropertyChanged(nameof(PodcastsVisible));
 		OnPropertyChanged(nameof(PlaylistsVisible));
 		OnPropertyChanged(nameof(PlaylistMatchesVisible));
-		OnPropertyChanged(nameof(YouTubeVisible));
 		OnPropertyChanged(nameof(NoResults));
 	}
 
@@ -191,52 +182,44 @@ public sealed partial class SearchViewModel : ObservableObject
 		}
 	}
 
-	// Catalogo e podcast in parallelo a YouTube: ogni sezione compare appena arriva, un errore ne toglie solo una.
+	// Catalogo, podcast e canali in parallelo: ogni sezione compare appena arriva, un errore ne toglie solo una.
 	async Task LoadCatalogAsync(string query, CancellationToken token)
 	{
 		IsLoadingCatalog = true;
 		var music = Task.Run(() => catalog.SearchAsync(query, token), token);
 		var shows = Task.Run(() => podcastService.SearchAsync(query, token), token);
-		try
-		{
-			var found = await music;
-			if (token.IsCancellationRequested)
-				return;
-			found.Artists.ForEach(Artists.Add);
-			found.Albums.ForEach(Albums.Add);
-			found.Tracks.ForEach(Songs.Add);
-			found.Playlists.ForEach(CatalogPlaylists.Add);
-			Refresh();
-			_ = PrematchAsync(found.Tracks, token);
-		}
-		catch (Exception ex) when (!token.IsCancellationRequested)
-		{
-			Debug.WriteLine(ex);
-		}
-		catch (OperationCanceledException)
-		{
-		}
-		try
-		{
-			var found = await shows;
-			if (token.IsCancellationRequested)
-				return;
-			foreach (var podcast in found.Take(4))
-				PodcastResults.Add(podcast);
-		}
-		catch (Exception ex) when (!token.IsCancellationRequested)
-		{
-			Debug.WriteLine(ex);
-		}
-		catch (OperationCanceledException)
-		{
-		}
-		finally
-		{
-			if (!token.IsCancellationRequested)
+		var channels = Task.Run(() => podcastService.SearchChannelsAsync(query, token), token);
+		await Task.WhenAll(
+			Section(music, found =>
 			{
-				IsLoadingCatalog = false;
+				found.Artists.ForEach(Artists.Add);
+				found.Albums.ForEach(Albums.Add);
+				found.Tracks.ForEach(Songs.Add);
+				found.Playlists.ForEach(CatalogPlaylists.Add);
+				_ = PrematchAsync(found.Tracks, token);
+			}),
+			Section(shows, found => found.Take(4).ToList().ForEach(PodcastResults.Add)),
+			Section(channels, found => found.ForEach(Channels.Add)));
+		if (!token.IsCancellationRequested)
+		{
+			IsLoadingCatalog = false;
+			Refresh();
+		}
+
+		async Task Section<T>(Task<T> loading, Action<T> show)
+		{
+			try
+			{
+				var found = await loading;
+				if (token.IsCancellationRequested)
+					return;
+				show(found);
 				Refresh();
+			}
+			catch (Exception ex)
+			{
+				if (!token.IsCancellationRequested)
+					Debug.WriteLine(ex);
 			}
 		}
 	}
@@ -247,9 +230,6 @@ public sealed partial class SearchViewModel : ObservableObject
 	[ObservableProperty]
 	public partial bool HasPlaylistMatches { get; private set; }
 
-	// Risultati di YouTube (senza i brani già fra PlaylistMatches).
-	public ObservableCollection<Track> Results { get; } = [];
-
 	[ObservableProperty]
 	[NotifyPropertyChangedFor(nameof(IsIdle), nameof(HasQuery))]
 	public partial string Query { get; set; } = "";
@@ -257,12 +237,6 @@ public sealed partial class SearchViewModel : ObservableObject
 	// Campo vuoto: si mostrano le tile (ricerche recenti e "Sfoglia tutto") al posto dei risultati.
 	public bool IsIdle => string.IsNullOrWhiteSpace(Query);
 	public bool HasQuery => !IsIdle;
-
-	[ObservableProperty]
-	public partial bool IsBusy { get; private set; }
-
-	[ObservableProperty]
-	public partial bool HasError { get; private set; }
 
 	partial void OnQueryChanged(string value) => _ = DebounceAsync(value);
 
@@ -273,7 +247,7 @@ public sealed partial class SearchViewModel : ObservableObject
 		try
 		{
 			await Task.Delay(450, cts.Token);
-			await StartAsync(query, cts.Token);
+			Start(query, cts.Token);
 		}
 		catch (OperationCanceledException)
 		{
@@ -282,12 +256,12 @@ public sealed partial class SearchViewModel : ObservableObject
 
 	// Invio sulla tastiera: cerca subito e salva fra le recenti.
 	[RelayCommand]
-	async Task Submit()
+	void Submit()
 	{
 		typing?.Cancel();
 		var cts = typing = new CancellationTokenSource();
 		library.AddSearch(Query);
-		await StartAsync(Query, cts.Token);
+		Start(Query, cts.Token);
 	}
 
 	[RelayCommand]
@@ -296,22 +270,12 @@ public sealed partial class SearchViewModel : ObservableObject
 	[RelayCommand]
 	void ClearRecent() => library.ClearSearches();
 
-	[RelayCommand]
-	Task Retry() => StartAsync(Query, (typing = new CancellationTokenSource()).Token);
-
-	[RelayCommand]
-	async Task LoadMore()
-	{
-		if (pages is { } current && !IsBusy)
-			await LoadPageAsync(current);
-	}
-
+	// Brano di «Dalle tue playlist»: la coda è quell'elenco.
 	[RelayCommand]
 	Task Play(Track track)
 	{
 		library.AddSearch(track.Title);
-		// La coda segue l'ordine a schermo: prima i brani delle playlist, poi YouTube.
-		return player.PlayAsync([.. PlaylistMatches, .. Results], track, "IN RIPRODUZIONE DALLA RICERCA", $"«{Query.Trim()}» nei brani");
+		return player.PlayAsync(PlaylistMatches, track, "IN RIPRODUZIONE DALLA RICERCA", $"«{Query.Trim()}» nelle tue playlist");
 	}
 
 	// Search Screen del Figma: "Your top genres" → le ultime ricerche, "Browse all" → ricerche pronte.
@@ -372,71 +336,30 @@ public sealed partial class SearchViewModel : ObservableObject
 		OnPropertyChanged(nameof(HasRecentSearches));
 	}
 
-	Task StartAsync(string query, CancellationToken token)
+	void Start(string query, CancellationToken token)
 	{
-		Results.Clear();
 		PlaylistMatches.Clear();
 		Artists.Clear();
+		Channels.Clear();
 		Albums.Clear();
 		Songs.Clear();
 		PodcastResults.Clear();
 		CatalogPlaylists.Clear();
-		HasError = false;
-		pages = null;
 		if (string.IsNullOrWhiteSpace(query))
 		{
 			HasPlaylistMatches = false;
 			IsLoadingCatalog = false;
 			// Campo svuotato: la prossima ricerca riparte senza filtri, cioè con tutte le sezioni.
-			ShowArtists = ShowAlbums = ShowSongs = ShowPodcasts = ShowPlaylists = false;
+			ShowArtists = ShowChannels = ShowAlbums = ShowSongs = ShowPodcasts = ShowPlaylists = false;
 			Refresh();
-			return Task.CompletedTask;
+			return;
 		}
 		// In testa i brani delle playlist che corrispondono: subito, senza rete, e spesso sono proprio quelli
-		// che si cercano. YouTube poi aggiunge il resto, senza ripeterli.
+		// che si cercano.
 		foreach (var track in library.SearchTracks(query))
 			PlaylistMatches.Add(track);
 		HasPlaylistMatches = PlaylistMatches.Count > 0;
 		_ = LoadCatalogAsync(query, token);
-		pages = youtube.Search.GetResultBatchesAsync(query.Trim(), SearchFilter.Video, token).GetAsyncEnumerator(token);
-		return LoadPageAsync(pages);
-	}
-
-	async Task LoadPageAsync(IAsyncEnumerator<Batch<ISearchResult>> current)
-	{
-		IsBusy = true;
-		try
-		{
-			var more = await current.MoveNextAsync();
-			if (current != pages)
-				return; // nel frattempo è partita un'altra ricerca: questi risultati sono vecchi
-			if (!more)
-			{
-				pages = null;
-				return;
-			}
-			// ponytail: le dirette non hanno durata né un audio-only utile, quindi si scartano.
-			// Salta anche i brani già in testa perché presenti nelle playlist.
-			foreach (var video in current.Current.Items.OfType<VideoSearchResult>())
-				if (video.Duration is not null && !PlaylistMatches.Any(m => m.Id == video.Id.Value) && !Results.Any(r => r.Id == video.Id.Value))
-					Results.Add(Track.From(video));
-		}
-		catch (OperationCanceledException)
-		{
-		}
-		catch (Exception ex) when (current == pages)
-		{
-			Debug.WriteLine(ex);
-			HasError = true;
-			pages = null;
-		}
-		finally
-		{
-			if (current == pages || pages is null)
-			{
-				IsBusy = false;
-				Refresh();
-			}
-		}
+		Refresh();
 	}
 }

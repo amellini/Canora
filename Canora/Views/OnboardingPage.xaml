@@ -12,11 +12,11 @@
 			<VerticalStackLayout Spacing="10" Padding="4,0" SemanticProperties.Description="{Binding Artist.Name}">
 				<Grid WidthRequest="96" HeightRequest="96" HorizontalOptions="Center">
 					<Ellipse Fill="{DynamicResource PlaylistCover}" />
-					<Image Source="{Binding Artist.Picture}" Aspect="AspectFill">
-						<Image.Clip>
+					<ShinyImage Uri="{Binding Artist.Picture}" Aspect="AspectFill">
+						<ShinyImage.Clip>
 							<EllipseGeometry Center="48,48" RadiusX="48" RadiusY="48" />
-						</Image.Clip>
-					</Image>
+						</ShinyImage.Clip>
+					</ShinyImage>
 					<!-- Scelto: anello e spunta nel colore d'accento, come il tema in uso nelle Impostazioni -->
 					<Ellipse Stroke="{DynamicResource Accent}" StrokeThickness="4" IsVisible="{Binding IsSelected}" />
 					<Grid WidthRequest="28" HeightRequest="28" HorizontalOptions="End" VerticalOptions="End" IsVisible="{Binding IsSelected}">
