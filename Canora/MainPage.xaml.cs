@@ -45,7 +45,11 @@ public partial class MainPage : ContentPage
 
 		player.Attach(Media);
 #if ANDROID
-		Media.HandlerChanged += (_, _) => PlayerTuning.Apply(Media, player.OnPlayerRepeatModeChanged, () => player.NextCommand.Execute(null), () => player.PreviousCommand.Execute(null));
+		Media.HandlerChanged += (_, _) =>
+		{
+			PlayerTuning.HoldService(Media);
+			PlayerTuning.Apply(Media, player.OnPlayerRepeatModeChanged, () => player.NextCommand.Execute(null), () => player.PreviousCommand.Execute(null));
+		};
 #endif
 		player.Message += ShowToast;
 		Home.SearchRequested += (_, _) => SelectTab(SearchTab);

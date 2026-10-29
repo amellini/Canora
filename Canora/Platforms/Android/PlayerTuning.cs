@@ -1,4 +1,6 @@
 using System.Runtime.CompilerServices;
+using Android.Content;
+using Android.OS;
 using Android.Views;
 using AndroidX.Media3.Common;
 using AndroidX.Media3.ExoPlayer;
@@ -34,6 +36,30 @@ static class PlayerTuning
 		exo.SetAudioAttributes(attributes, true);
 		exo.SetHandleAudioBecomingNoisy(true);
 		exo.SetWakeMode(C.WakeModeNetwork);
+	}
+
+	// MediaElement avvia il suo servizio in primo piano (startForegroundService + bind) appena l'handler mappa Source,
+	// anche vuoto, e lo ferma (stop + unbind) quando l'handler si stacca. startForeground però lo chiama solo in OnCreate,
+	// che gira sul thread UI dopo quello che è già in coda: se l'handler si stacca prima (Android 17, finito un
+	// aggiornamento, rilancia l'app con clear-task sopra l'activity appena aperta e la MainPage passa alla nuova), Android
+	// abbatte un servizio non ancora in primo piano e chiude l'app con ForegroundServiceDidNotStartInTimeException.
+	// Riprodotto col doppio avvio "am start" + "am start -f 0x10008000" a 0,2-0,3 s. Un bind nostro lo tiene in vita finché
+	// non si connette (OnCreate, e con lui startForeground, è passato), poi molla: da lì lo stop del toolkit non fa danni.
+	// Va chiamato su HandlerChanged, nello stesso giro in cui il toolkit avvia il servizio.
+	public static void HoldService(MediaElement element)
+	{
+		if (element.Handler is null)
+			return;
+		var context = Android.App.Application.Context;
+		// Il servizio del toolkit è internal: lo si raggiunge col nome Java che dichiara.
+		var intent = new Intent().SetClassName(context, "communityToolkit.maui.media.services");
+		context.BindService(intent, new ServiceHold(), Bind.AutoCreate);
+	}
+
+	sealed class ServiceHold : Java.Lang.Object, IServiceConnection
+	{
+		public void OnServiceConnected(ComponentName? name, IBinder? service) => Android.App.Application.Context.UnbindService(this);
+		public void OnServiceDisconnected(ComponentName? name) { }
 	}
 
 	static PlayerView? Find(ViewGroup group)
