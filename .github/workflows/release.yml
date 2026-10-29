@@ -73,7 +73,11 @@ jobs:
       - name: Release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create '${{ github.ref_name }}' "Canora-$env:VERSION.apk" "Canora-$env:VERSION-win-x64.zip" --title "Can'ora $env:VERSION" --notes-from-tag
+        # actions/checkout ricrea il tag come semplice (punta al commit): si riprende quello annotato, altrimenti
+        # --notes-from-tag legge il messaggio del commit.
+        run: |
+          git fetch --force origin 'refs/tags/${{ github.ref_name }}:refs/tags/${{ github.ref_name }}'
+          gh release create '${{ github.ref_name }}' "Canora-$env:VERSION.apk" "Canora-$env:VERSION-win-x64.zip" --title "Can'ora $env:VERSION" --notes-from-tag
 
   mac:
     # Dopo la release, che c'è già con APK e zip per Windows: aggiunge lo zip per Mac. Se questo job fallisce, Android e
