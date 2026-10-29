@@ -1,7 +1,7 @@
 name: Release
 
-# Un tag vX.Y.Z (git tag v1.0.0, poi git push origin v1.0.0) compila l'APK per Android e gli zip per Windows e per Mac
-# e li pubblica in una release con quel nome. Le note della release sono il messaggio del tag: annotato, con le novità
+# Un tag vX.Y.Z (git tag v1.0.0, poi git push origin v1.0.0) compila l'APK per Android, Setup e zip per Windows, dmg e
+# zip per Mac, e li pubblica in una release con quel nome. Le note della release sono il messaggio del tag: annotato, con le novità
 # (git tag -a v1.2.0 --cleanup=verbatim -F note.md, verbatim per tenere i titoli "#"); un tag semplice usa il commit.
 # Secrets del repo: ANDROID_KEYSTORE (il keystore in base64, alias "canora") e ANDROID_KEYSTORE_PASSWORD (la stessa per
 # keystore e chiave).
@@ -70,6 +70,21 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           Compress-Archive Canora/bin/Release/net11.0-windows10.0.19041.0/win-x64/publish/* "Canora-$env:VERSION-win-x64.zip"
 
+      - name: Setup Windows
+        # Velopack: il Setup installa per l'utente in %LocalAppData%\com.mellosofy.canora. Non "Canora": la
+        # disinstallazione cancella la cartella del packId, e i dati dell'app stanno in %LocalAppData%\Canora.
+        # releases.win.json e il .nupkg sono quello da cui l'app installata si aggiorna (Platforms/Windows/AppUpdate.cs).
+        # vpk alla stessa versione del pacchetto Velopack del csproj. --icon: senza, la finestra del Setup e quella
+        # dell'aggiornamento hanno l'icona generica di Windows nella barra delle applicazioni.
+        # ponytail: pacchetto intero a ogni versione; per i delta, "vpk download github" della release precedente prima di pack.
+        run: |
+          dotnet tool install vpk --version 1.2.161 --tool-path "$env:RUNNER_TEMP\vpk"
+          & "$env:RUNNER_TEMP\vpk\vpk.exe" pack --packId com.mellosofy.canora --packVersion $env:VERSION --packTitle "Can'ora" `
+            --packAuthors MelloSofy --packDir Canora/bin/Release/net11.0-windows10.0.19041.0/win-x64/publish --mainExe Canora.exe `
+            --icon Canora/bin/Release/net11.0-windows10.0.19041.0/win-x64/publish/appicon.ico --outputDir velopack
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          Copy-Item velopack/com.mellosofy.canora-win-Setup.exe "Canora-$env:VERSION-win-x64-setup.exe"
+
       - name: Release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -77,7 +92,9 @@ jobs:
         # --notes-from-tag legge il messaggio del commit.
         run: |
           git fetch --force origin 'refs/tags/${{ github.ref_name }}:refs/tags/${{ github.ref_name }}'
-          gh release create '${{ github.ref_name }}' "Canora-$env:VERSION.apk" "Canora-$env:VERSION-win-x64.zip" --title "Can'ora $env:VERSION" --notes-from-tag
+          gh release create '${{ github.ref_name }}' "Canora-$env:VERSION.apk" "Canora-$env:VERSION-win-x64-setup.exe" `
+            "Canora-$env:VERSION-win-x64.zip" velopack/releases.win.json "velopack/com.mellosofy.canora-$env:VERSION-full.nupkg" `
+            --title "Can'ora $env:VERSION" --notes-from-tag
 
   mac:
     # Dopo la release, che c'è già con APK e zip per Windows: aggiunge lo zip per Mac. Se questo job fallisce, Android e
@@ -99,9 +116,10 @@ jobs:
         # L'Xcode preciso che vuole questa versione di .NET per Mac Catalyst, come in mac.yml.
         run: sudo xcode-select -s /Applications/Xcode_27.0.app
 
-      - name: Zip Mac
+      - name: Dmg e zip Mac
         # App universale (Apple Silicon e Intel) con la firma ad hoc dell'SDK: senza Developer ID né notarizzazione
-        # macOS la blocca alla prima apertura (vedi il README). ditto tiene intatti il bundle e la sua firma.
+        # macOS la blocca alla prima apertura (vedi il README). ditto tiene intatti il bundle e la sua firma. Il dmg ha
+        # l'app e il collegamento ad Applicazioni, per installarla trascinandola come d'abitudine su Mac.
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ needs.release.outputs.version }}
@@ -110,4 +128,8 @@ jobs:
           dotnet build Canora/Canora.csproj -f net11.0-maccatalyst -p:TargetFrameworks=net11.0-maccatalyst -c Release \
             -p:ApplicationDisplayVersion=$VERSION -p:ApplicationVersion=$VERSION_CODE
           ditto -c -k --keepParent Canora/bin/Release/net11.0-maccatalyst/Canora.app "Canora-$VERSION-mac.zip"
-          gh release upload "$GITHUB_REF_NAME" "Canora-$VERSION-mac.zip"
+          mkdir dmg
+          ditto Canora/bin/Release/net11.0-maccatalyst/Canora.app dmg/Canora.app
+          ln -s /Applications dmg/Applications
+          hdiutil create -volname "Can'ora" -srcfolder dmg -format UDZO "Canora-$VERSION-mac.dmg"
+          gh release upload "$GITHUB_REF_NAME" "Canora-$VERSION-mac.dmg" "Canora-$VERSION-mac.zip"

@@ -59,4 +59,11 @@ public sealed class AppDatabase
 				return true;
 			}), TaskScheduler.Default);
 	}
+
+	// Le scritture ancora in coda: da aspettare prima di chiudere l'app di colpo (il riavvio per l'aggiornamento).
+	public Task FlushAsync()
+	{
+		lock (queueGate)
+			return queue;
+	}
 }

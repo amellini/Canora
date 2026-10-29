@@ -44,14 +44,19 @@ voice).
 
 ### Download
 
-Get the APK for Android and the zips for Windows and macOS from [Releases](https://github.com/amellini/Canora/releases).
+Get the APK for Android, the installer for Windows and the dmg for macOS from
+[Releases](https://github.com/amellini/Canora/releases).
 
 - **Android 8.0 or later**: open the APK and allow installs from that source when Android asks.
-- **Windows 10 1809 or later**: unzip and run `Canora.exe`. The exe is not signed, so SmartScreen may ask you to
-  confirm (*More info → Run anyway*).
-- **macOS 14 Sonoma or later** (experimental), Apple Silicon or Intel: unzip and move `Canora.app` to Applications. The
-  app is not notarized by Apple, so macOS blocks it the first time: open *System Settings → Privacy & Security* and
-  click *Open Anyway*, or run `xattr -dr com.apple.quarantine /Applications/Canora.app`.
+- **Windows 10 1809 or later**: run `Canora-x.y.z-win-x64-setup.exe`. It installs Can'ora for your user, with no admin
+  rights, and adds it to the Start menu. From then on the app updates itself: when a new version is out it downloads
+  it and offers to restart, or installs it the next time you open it. The setup is not signed, so SmartScreen may ask
+  you to confirm (*More info → Run anyway*). The zip is the portable version: unzip and run `Canora.exe`, with no
+  automatic updates.
+- **macOS 14 Sonoma or later** (experimental), Apple Silicon or Intel: open the dmg and drag `Canora.app` to Applications
+  (the zip has the same app). The app is not notarized by Apple, so macOS blocks it the first time: open
+  *System Settings → Privacy & Security* and click *Open Anyway*, or run
+  `xattr -dr com.apple.quarantine /Applications/Canora.app`.
 
 ### Features
 
@@ -174,14 +179,19 @@ L'interfaccia è in italiano. Il nome viene da *canora*, come in *voce canora*.
 
 ### Download
 
-L'APK per Android e gli zip per Windows e macOS sono nelle [Release](https://github.com/amellini/Canora/releases).
+L'APK per Android, l'installer per Windows e il dmg per macOS sono nelle
+[Release](https://github.com/amellini/Canora/releases).
 
 - **Android 8.0 o successivo**: apri l'APK e consenti l'installazione da quella fonte quando Android lo chiede.
-- **Windows 10 1809 o successivo**: estrai lo zip e avvia `Canora.exe`. L'exe non è firmato, quindi SmartScreen può
-  chiedere conferma (*Ulteriori informazioni → Esegui comunque*).
-- **macOS 14 Sonoma o successivo** (sperimentale), Apple Silicon o Intel: estrai lo zip e sposta `Canora.app` in
-  Applicazioni. L'app non è notarizzata da Apple, quindi macOS la blocca la prima volta: apri *Impostazioni di Sistema →
-  Privacy e sicurezza* e fai clic su *Apri comunque*, oppure lancia `xattr -dr com.apple.quarantine /Applications/Canora.app`.
+- **Windows 10 1809 o successivo**: avvia `Canora-x.y.z-win-x64-setup.exe`. Installa Can'ora per il tuo utente, senza
+  diritti di amministratore, e la aggiunge al menu Start. Da lì in poi l'app si aggiorna da sola: quando esce una nuova
+  versione la scarica e propone di riavviare, oppure la installa la volta dopo che la apri. Il setup non è firmato,
+  quindi SmartScreen può chiedere conferma (*Ulteriori informazioni → Esegui comunque*). Lo zip è la versione portatile:
+  estrailo e avvia `Canora.exe`, senza aggiornamenti automatici.
+- **macOS 14 Sonoma o successivo** (sperimentale), Apple Silicon o Intel: apri il dmg e trascina `Canora.app` in Applicazioni
+  (lo zip contiene la stessa app). L'app non è notarizzata da Apple, quindi macOS la blocca la prima volta: apri
+  *Impostazioni di Sistema → Privacy e sicurezza* e fai clic su *Apri comunque*, oppure lancia
+  `xattr -dr com.apple.quarantine /Applications/Canora.app`.
 
 ### Funzionalità
 

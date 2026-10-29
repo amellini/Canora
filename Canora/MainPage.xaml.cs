@@ -100,9 +100,13 @@ public partial class MainPage : ContentPage
 #endif
 
 	// Una versione più recente su GitHub: si apre la pagina della release, oppure la si salta fino alla prossima;
-	// "Annulla" la ripropone al prossimo avvio.
+	// "Annulla" la ripropone al prossimo avvio. Su Windows installato con il Setup si aggiorna da sola (AppUpdate).
 	static async Task OfferUpdateAsync()
 	{
+#if WINDOWS
+		if (await WinUI.AppUpdate.TryAsync())
+			return;
+#endif
 		if (await UpdateCheck.NewerAsync() is not { } release)
 			return;
 		const string download = "Scarica", skip = "Salta questa versione";

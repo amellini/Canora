@@ -87,7 +87,15 @@
 	     le legge da file. -->
 	<ItemGroup Condition="'$([MSBuild]::GetTargetPlatformIdentifier($(TargetFramework)))' == 'windows'">
 		<Content Include="Platforms\Windows\Taskbar\*.ico" Link="Taskbar\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+		<!-- Installer (Setup.exe) e aggiornamenti dalle release di GitHub (Platforms/Windows/Program.cs e AppUpdate.cs).
+		     Stessa versione di vpk in .github/workflows/release.yml. -->
+		<PackageReference Include="Velopack" Version="1.2.161" />
 	</ItemGroup>
+
+	<!-- Main di Windows scritto a mano (Platforms/Windows/Program.cs): Velopack deve partire prima di WinUI. -->
+	<PropertyGroup Condition="'$([MSBuild]::GetTargetPlatformIdentifier($(TargetFramework)))' == 'windows'">
+		<DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
+	</PropertyGroup>
 
 	<!-- Comandi vocali dall'assistente del telefono (Android 16+ AppFunctions): il generatore scrive registrazione,
 	     schema XML e servizio; Hosting.Maui dà UseShiny(). Solo Android, come Platforms/Android/AssistantFunctions.cs. -->
