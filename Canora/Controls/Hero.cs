@@ -11,7 +11,8 @@ namespace Canora.Controls;
 // con una velatura dello stesso tono che lo sostiene. I controlli aggiunti dentro in XAML (back, "+") stanno
 // sopra e si colorano con TopColor (in alto) o TextColor (in basso).
 // Con RenameCommand accanto al titolo compare una matita: il titolo diventa modificabile sul posto e alla
-// conferma (Invio o tocco altrove) il comando riceve il nuovo nome.
+// conferma (Invio o tocco altrove) il comando riceve il nuovo nome. Note (gli ascolti di album e playlist) sta a destra
+// del sottotitolo, che si accorcia per fargli posto.
 public sealed class Hero : Grid
 {
 	const double PencilSize = 36;
@@ -24,6 +25,8 @@ public sealed class Hero : Grid
 		propertyChanged: (b, _, _) => ((Hero)b).OnSourceChanged());
 	public static readonly BindableProperty TitleProperty = BindableProperty.Create(nameof(Title), typeof(string), typeof(Hero));
 	public static readonly BindableProperty SubtitleProperty = BindableProperty.Create(nameof(Subtitle), typeof(string), typeof(Hero));
+	public static readonly BindableProperty NoteProperty = BindableProperty.Create(nameof(Note), typeof(string), typeof(Hero),
+		propertyChanged: (b, _, value) => ((Hero)b).note.IsVisible = !string.IsNullOrEmpty((string?)value));
 	public static readonly BindableProperty TitleMarginProperty = BindableProperty.Create(nameof(TitleMargin), typeof(Thickness), typeof(Hero), new Thickness(18, 0, 18, 16),
 		propertyChanged: (b, _, _) => ((Hero)b).UpdateTitleWidth());
 	public static readonly BindableProperty RenameCommandProperty = BindableProperty.Create(nameof(RenameCommand), typeof(ICommand), typeof(Hero),
@@ -34,6 +37,7 @@ public sealed class Hero : Grid
 	public string? Source { get => (string?)GetValue(SourceProperty); set => SetValue(SourceProperty, value); }
 	public string? Title { get => (string?)GetValue(TitleProperty); set => SetValue(TitleProperty, value); }
 	public string? Subtitle { get => (string?)GetValue(SubtitleProperty); set => SetValue(SubtitleProperty, value); }
+	public string? Note { get => (string?)GetValue(NoteProperty); set => SetValue(NoteProperty, value); }
 	public Thickness TitleMargin { get => (Thickness)GetValue(TitleMarginProperty); set => SetValue(TitleMarginProperty, value); }
 	public ICommand? RenameCommand { get => (ICommand?)GetValue(RenameCommandProperty); set => SetValue(RenameCommandProperty, value); }
 	public Color TextColor { get => (Color)GetValue(TextColorProperty); private set => SetValue(TextColorProperty, value); }
@@ -46,6 +50,7 @@ public sealed class Hero : Grid
 	readonly BoxView topShade = new();
 	readonly BoxView bottomShade = new();
 	readonly Label title = new() { FontFamily = "MontserratBold", FontSize = 26, CharacterSpacing = -0.8, MaxLines = 2, LineBreakMode = LineBreakMode.TailTruncation, VerticalOptions = LayoutOptions.Center };
+	readonly Label note = new() { FontFamily = "MontserratBold", FontSize = 16, Opacity = 0.85, Margin = new Thickness(12, 0, 0, 0), IsVisible = false };
 	readonly Grid pencil = new() { WidthRequest = PencilSize, HeightRequest = PencilSize, VerticalOptions = LayoutOptions.Center };
 	readonly Entry editor = new() { FontFamily = "MontserratBold", FontSize = 26, MaxLength = 60, ReturnType = ReturnType.Done };
 	readonly HorizontalStackLayout titleRow = new();
@@ -71,6 +76,11 @@ public sealed class Hero : Grid
 		title.SetBinding(Label.TextColorProperty, static (Hero h) => h.TextColor, source: this);
 		subtitle.SetBinding(Label.TextProperty, static (Hero h) => h.Subtitle, source: this);
 		subtitle.SetBinding(Label.TextColorProperty, static (Hero h) => h.TextColor, source: this);
+		note.SetBinding(Label.TextProperty, static (Hero h) => h.Note, source: this);
+		note.SetBinding(Label.TextColorProperty, static (Hero h) => h.TextColor, source: this);
+		var subtitleRow = new Grid { ColumnDefinitions = { new(GridLength.Star), new(GridLength.Auto) } };
+		subtitleRow.Add(subtitle);
+		subtitleRow.Add(note, 1);
 
 		// Matita subito dopo il testo del titolo (il titolo ha una larghezza massima, vedi UpdateTitleWidth).
 		var pencilIcon = new Image { Source = "ic_edit.png", WidthRequest = 22, HeightRequest = 22 };
@@ -91,7 +101,7 @@ public sealed class Hero : Grid
 		editorBox.Add(editor);
 		editorBox.Add(underline);
 
-		var texts = new VerticalStackLayout { Spacing = 4, VerticalOptions = LayoutOptions.End, Children = { titleRow, editorBox, subtitle } };
+		var texts = new VerticalStackLayout { Spacing = 4, VerticalOptions = LayoutOptions.End, Children = { titleRow, editorBox, subtitleRow } };
 		texts.SetBinding(MarginProperty, static (Hero h) => h.TitleMargin, source: this);
 		Add(texts);
 		Shade(topLight: false, bottomLight: false);

@@ -12,7 +12,7 @@
 
 			<CollectionView.Header>
 				<VerticalStackLayout Padding="0,0,0,24">
-					<Hero x:Name="AlbumHero" Source="{Binding Album.CoverLarge}" Title="{Binding Album.Title}" Subtitle="{Binding Album.AlbumLine}">
+					<Hero x:Name="AlbumHero" Source="{Binding Album.CoverLarge}" Title="{Binding Album.Title}" Subtitle="{Binding Album.AlbumLine}" Note="{Binding AlbumPlaysText}">
 						<Grid WidthRequest="48" HeightRequest="48" HorizontalOptions="Start" VerticalOptions="Start" Margin="6,6,0,0" SemanticProperties.Description="Indietro">
 							<Image Source="ic_back.png" WidthRequest="25" HeightRequest="25" Rotation="180" Tint.Color="{Binding TopColor, Source={x:Reference AlbumHero}}" />
 							<Grid.GestureRecognizers>

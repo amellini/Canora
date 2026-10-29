@@ -47,6 +47,16 @@ public sealed partial class CatalogViewModel(CatalogService catalog, PlayerViewM
 	public bool HasAlbums => Albums.Count > 0;
 	public bool HasSingles => Singles.Count > 0;
 
+	// Quante volte hai ascoltato i brani dell'album, nell'hero; niente finché è zero.
+	public string? AlbumPlaysText => AlbumTracks.Sum(library.Plays) switch
+	{
+		0 => null,
+		1 => "1 ascolto",
+		var plays => $"{plays} ascolti",
+	};
+
+	void OnListensChanged() => MainThread.BeginInvokeOnMainThread(() => OnPropertyChanged(nameof(AlbumPlaysText)));
+
 	[RelayCommand]
 	async Task OpenArtist(CatalogArtist artist)
 	{
@@ -95,6 +105,10 @@ public sealed partial class CatalogViewModel(CatalogService catalog, PlayerViewM
 		var cts = albumLoad = new CancellationTokenSource();
 		Album = album;
 		AlbumTracks.Clear();
+		OnPropertyChanged(nameof(AlbumPlaysText));
+		// Il numero sale anche con l'album aperto. -= prima: il view model è uno solo, ci si iscrive una volta.
+		library.ListensChanged -= OnListensChanged;
+		library.ListensChanged += OnListensChanged;
 		LoadFailed = false;
 		IsLoadingAlbum = true;
 		try
@@ -105,6 +119,7 @@ public sealed partial class CatalogViewModel(CatalogService catalog, PlayerViewM
 			Album = page.Album;
 			foreach (var track in page.Tracks)
 				AlbumTracks.Add(track);
+			OnPropertyChanged(nameof(AlbumPlaysText));
 		}
 		catch (OperationCanceledException)
 		{

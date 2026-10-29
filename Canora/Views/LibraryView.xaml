@@ -77,7 +77,7 @@
 				<CollectionView.Header>
 					<VerticalStackLayout Padding="0,0,0,30">
 						<!-- Senza copertina (playlist vuota): il gradiente dell'hero con l'icona della libreria -->
-						<Hero x:Name="PlaylistHero" Source="{Binding Selected.Cover}" Title="{Binding Selected.Name}" Subtitle="{Binding Selected.Summary}" RenameCommand="{Binding RenameCommand}">
+						<Hero x:Name="PlaylistHero" Source="{Binding Selected.Cover}" Title="{Binding Selected.Name}" Subtitle="{Binding Selected.Summary}" Note="{Binding Selected.PlaysText}" RenameCommand="{Binding RenameCommand}">
 							<Image Source="ic_nav_library.png" WidthRequest="78" HeightRequest="51" Style="{StaticResource Icon}" IsVisible="{Binding Selected.NoCover}" />
 							<Grid WidthRequest="48" HeightRequest="48" HorizontalOptions="Start" VerticalOptions="Start" Margin="6,6,0,0" SemanticProperties.Description="Indietro">
 								<Image Source="ic_back.png" WidthRequest="25" HeightRequest="25" Rotation="180" Tint.Color="{Binding TopColor, Source={x:Reference PlaylistHero}}" />
@@ -88,11 +88,9 @@
 						</Hero>
 
 						<VerticalStackLayout Padding="18,0">
-							<!-- "191,165 likes" → ascolti (brani e durata sono già nell'hero) -->
-							<Label Text="{Binding Selected.PlaysText}" Style="{StaticResource Description}" Margin="0,16,0,0" />
-
-							<!-- Buttons: shuffle (al posto del cuore), cestino (al posto del ⋮, rinomina è la matita nell'hero), play verde 60 -->
-							<Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="35" HeightRequest="60" Margin="0,8,0,0">
+							<!-- Buttons: shuffle (al posto del cuore), cestino (al posto del ⋮, rinomina è la matita nell'hero), play verde 60.
+							     Gli ascolti della playlist stanno nell'hero, a destra di brani e durata. -->
+							<Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="35" HeightRequest="60" Margin="0,16,0,0">
 								<Image Source="ic_shuffle.png" WidthRequest="30" HeightRequest="30" Style="{StaticResource Icon}" SemanticProperties.Description="Riproduzione casuale">
 									<Image.Triggers>
 										<DataTrigger TargetType="Image" Binding="{Binding Player.IsShuffle}" Value="True">

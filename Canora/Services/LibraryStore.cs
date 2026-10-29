@@ -22,6 +22,9 @@ public sealed partial class LibraryStore
 	// Copia in memoria del tracker (vedi AddListen): le statistiche leggono da qui, sempre allineate anche mentre la
 	// scrittura su SQLite è ancora in coda. Il lock perché il mix della settimana le legge da un thread del pool.
 	readonly Dictionary<string, ListenEntity> listens = [];
+	// Gli stessi ascolti per chiave artista|titolo (vedi ListenKey), per gli ascolti di un album: i suoi brani hanno l'id
+	// di Deezer, l'ascolto quello del video YouTube abbinato.
+	readonly Dictionary<string, int> playsByKey = [];
 	readonly Lock listensGate = new();
 
 	// Un ascolto in più nel tracker (la Home aggiorna "Per te").
@@ -49,15 +52,18 @@ public sealed partial class LibraryStore
 				.OrderByDescending(p => p.SortKey)
 				.ToList();
 			var recent = c.Table<RecentEntity>().OrderByDescending(r => r.PlayedAt).Take(MaxRecent).ToList().Select(r => r.ToTrack()).ToList();
-			var month = DateTime.Now.AddDays(-ListenDays);
-			return (playlists, recent, listens: c.Table<ListenEntity>().Where(l => l.LastPlayed >= month).ToList());
+			return (playlists, recent, listens: c.Table<ListenEntity>().ToList());
 		});
 		foreach (var p in loaded.playlists ?? [])
 			Playlists.Add(p);
 		foreach (var t in loaded.recent ?? [])
 			Recent.Add(t);
 		foreach (var l in loaded.listens ?? [])
+		{
 			listens[l.TrackId] = l;
+			var key = ListenKey(l.Artist, l.Title);
+			playsByKey[key] = playsByKey.GetValueOrDefault(key) + l.Plays;
+		}
 	}
 
 	public Playlist CreatePlaylist(string name)
@@ -142,10 +148,8 @@ public sealed partial class LibraryStore
 		});
 	}
 
-	// Tracker degli ascolti di musica dell'ultimo mese: una riga per brano (ascoltato 20 volte = una riga con Plays 20),
-	// e via le righe non riascoltate da più di ListenDays giorni. Base per le proposte in base agli ascolti.
-	// ponytail: Plays conta dal primo ascolto ancora in finestra, non è una finestra mobile esatta (un brano ascoltato
-	// ogni settimana si porta dietro anche gli ascolti di più di un mese fa); una tabella di eventi se serve esattezza.
+	// Tracker degli ascolti di musica: una riga per brano (ascoltato 20 volte = una riga con Plays 20), da sempre. Base
+	// per le proposte in base agli ascolti e per il numero di ascolti di un album (Plays).
 	public void AddListen(Track track)
 	{
 		var now = DateTime.Now;
@@ -154,23 +158,30 @@ public sealed partial class LibraryStore
 			listens[track.Id] = listens.TryGetValue(track.Id, out var known)
 				? known with { Title = track.Title, Artist = track.Artist, ArtworkUrl = track.ArtworkUrl, Plays = known.Plays + 1, LastPlayed = now }
 				: new ListenEntity { TrackId = track.Id, Title = track.Title, Artist = track.Artist, DurationTicks = track.Duration?.Ticks, ArtworkUrl = track.ArtworkUrl, Plays = 1, FirstPlayed = now, LastPlayed = now };
-			foreach (var stale in listens.Values.Where(l => l.LastPlayed < now.AddDays(-ListenDays)).ToList())
-				listens.Remove(stale.TrackId);
+			var key = ListenKey(track.Artist, track.Title);
+			playsByKey[key] = playsByKey.GetValueOrDefault(key) + 1;
 		}
 		ListensChanged?.Invoke();
-		Write(db =>
-		{
-			db.Execute("""
-				INSERT INTO Listens (TrackId, Title, Artist, DurationTicks, ArtworkUrl, Plays, FirstPlayed, LastPlayed)
-				VALUES (?, ?, ?, ?, ?, 1, ?, ?)
-				ON CONFLICT(TrackId) DO UPDATE SET Plays = Plays + 1, LastPlayed = excluded.LastPlayed,
-					Title = excluded.Title, Artist = excluded.Artist, ArtworkUrl = excluded.ArtworkUrl
-				""", track.Id, track.Title, track.Artist, track.Duration?.Ticks, track.ArtworkUrl, now, now);
-			db.Execute("DELETE FROM Listens WHERE LastPlayed < ?", now.AddDays(-ListenDays));
-		});
+		Write(db => db.Execute("""
+			INSERT INTO Listens (TrackId, Title, Artist, DurationTicks, ArtworkUrl, Plays, FirstPlayed, LastPlayed)
+			VALUES (?, ?, ?, ?, ?, 1, ?, ?)
+			ON CONFLICT(TrackId) DO UPDATE SET Plays = Plays + 1, LastPlayed = excluded.LastPlayed,
+				Title = excluded.Title, Artist = excluded.Artist, ArtworkUrl = excluded.ArtworkUrl
+			""", track.Id, track.Title, track.Artist, track.Duration?.Ticks, track.ArtworkUrl, now, now));
+	}
+
+	// Quante volte hai ascoltato un brano, con qualunque id (Deezer, YouTube) e in qualunque versione con lo stesso
+	// artista e titolo.
+	public int Plays(Track track)
+	{
+		var key = ListenKey(track.Artist, track.Title);
+		lock (listensGate)
+			return playsByKey.GetValueOrDefault(key);
 	}
 
 	// Gli artisti più ascoltati negli ultimi giorni (somma degli ascolti dei loro brani), il nome come l'ultimo brano.
+	// ponytail: un brano sentito nel periodo porta tutti i suoi ascolti, anche quelli di prima; una tabella di eventi
+	// se serve contare solo il periodo.
 	public List<(string Artist, int Plays)> TopArtists(int days, int count)
 	{
 		var since = DateTime.Now.AddDays(-days);
@@ -190,7 +201,7 @@ public sealed partial class LibraryStore
 			return listens.Values.Where(l => l.LastPlayed >= since).MaxBy(l => l.Plays)?.ArtworkUrl;
 	}
 
-	// La copertina del brano più ascoltato nel mese di un artista (la sua compilation in "Per te").
+	// La copertina del brano più ascoltato di un artista (la sua compilation in "Per te").
 	public string? ArtistArtwork(string artist)
 	{
 		var key = artist.Trim().ToLowerInvariant();
@@ -199,10 +210,12 @@ public sealed partial class LibraryStore
 	}
 
 	// I brani ascoltati nel mese, per chiave artista|titolo (gli id non servono: Deezer e YouTube ne hanno di diversi).
+	// Solo il mese: il mix della settimana li toglie, e quelli di mesi fa possono tornare.
 	public HashSet<string> ListenedKeys()
 	{
+		var month = DateTime.Now.AddDays(-ListenDays);
 		lock (listensGate)
-			return [.. listens.Values.Select(l => ListenKey(l.Artist, l.Title))];
+			return [.. listens.Values.Where(l => l.LastPlayed >= month).Select(l => ListenKey(l.Artist, l.Title))];
 	}
 
 	// "Fire (Remastered 2011)" e "fire" sono lo stesso brano: minuscole, senza parentesi né punteggiatura.
