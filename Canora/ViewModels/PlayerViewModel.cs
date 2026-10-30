@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using CommunityToolkit.Maui.Core;
 using CommunityToolkit.Maui.Views;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -9,6 +8,7 @@ using Canora.Models;
 using Canora.Services;
 using Canora.Theming;
 using Canora.Views;
+using Sentry;
 using YoutubeExplode;
 using YoutubeExplode.Videos.Streams;
 
@@ -270,7 +270,7 @@ public sealed partial class PlayerViewModel(YoutubeClient youtube, LibraryStore 
 
 	void OnMediaFailed(object? sender, MediaFailedEventArgs e) => MainThread.BeginInvokeOnMainThread(() =>
 	{
-		Debug.WriteLine($"MediaFailed: {e.ErrorMessage}");
+		SentrySdk.CaptureMessage($"MediaFailed: {e.ErrorMessage}", SentryLevel.Error);
 		IsLoading = false;
 		Fail();
 	});
@@ -423,7 +423,7 @@ public sealed partial class PlayerViewModel(YoutubeClient youtube, LibraryStore 
 		}
 		catch (Exception ex)
 		{
-			Debug.WriteLine(ex);
+			SentrySdk.CaptureException(ex);
 			IsLoading = false;
 			Fail();
 		}
@@ -469,7 +469,7 @@ public sealed partial class PlayerViewModel(YoutubeClient youtube, LibraryStore 
 			}
 			catch (Exception ex)
 			{
-				Debug.WriteLine($"Precaricamento non riuscito: {ex.Message}"); // al cambio si riprova da capo
+				SentrySdk.Logger.LogWarning("Precaricamento non riuscito: {0}", ex.Message); // al cambio si riprova da capo
 			}
 		}
 	}
@@ -785,7 +785,7 @@ file sealed class SafeStream(Stream inner) : Stream
 			}
 			catch (Exception ex)
 			{
-				Debug.WriteLine($"Stream interrotto: {ex.Message}");
+				SentrySdk.CaptureException(ex); // stream interrotto anche dopo i tentativi
 				return 0;
 			}
 		}

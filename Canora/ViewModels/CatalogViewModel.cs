@@ -1,10 +1,10 @@
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Canora.Controls;
 using Canora.Models;
 using Canora.Services;
+using Sentry;
 
 namespace Canora.ViewModels;
 
@@ -88,7 +88,7 @@ public sealed partial class CatalogViewModel(CatalogService catalog, PlayerViewM
 		}
 		catch (Exception ex)
 		{
-			Debug.WriteLine(ex);
+			SentrySdk.CaptureException(ex);
 			LoadFailed = true;
 		}
 		finally
@@ -126,7 +126,7 @@ public sealed partial class CatalogViewModel(CatalogService catalog, PlayerViewM
 		}
 		catch (Exception ex)
 		{
-			Debug.WriteLine(ex);
+			SentrySdk.CaptureException(ex);
 			LoadFailed = true;
 		}
 		finally
@@ -185,7 +185,7 @@ public sealed partial class CatalogViewModel(CatalogService catalog, PlayerViewM
 		}
 		catch (Exception ex)
 		{
-			Debug.WriteLine(ex);
+			SentrySdk.CaptureException(ex);
 			player.Notify("Impossibile aprire l'artista. Controlla la connessione.");
 		}
 	}

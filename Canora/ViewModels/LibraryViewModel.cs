@@ -149,7 +149,7 @@ public sealed partial class LibraryViewModel : ObservableObject
 			}
 			catch (Exception ex)
 			{
-				System.Diagnostics.Debug.WriteLine(ex);
+				Sentry.SentrySdk.Logger.LogWarning("Copertina del genere {0} non caricata: {1}", genre, ex.Message);
 			}
 		}
 	}

@@ -1,5 +1,5 @@
-using System.Diagnostics;
 using SQLite;
+using Sentry;
 
 namespace Canora.Services;
 
@@ -25,7 +25,7 @@ public sealed class AppDatabase
 		}
 		catch (Exception ex)
 		{
-			Debug.WriteLine($"Database non disponibile, si lavora solo in memoria: {ex}");
+			SentrySdk.CaptureException(ex); // database non disponibile: si lavora solo in memoria
 		}
 	}
 
@@ -41,7 +41,7 @@ public sealed class AppDatabase
 		}
 		catch (Exception ex)
 		{
-			Debug.WriteLine($"Accesso al database fallito: {ex}");
+			SentrySdk.CaptureException(ex);
 			return default;
 		}
 	}

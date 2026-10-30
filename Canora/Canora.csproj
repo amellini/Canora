@@ -81,6 +81,18 @@
 		<!-- ShinyImage per le copertine remote: cache in memoria e su disco condivisa con ArtworkColor (un download per
 		     copertina, non due). Mac Catalyst non ha un asset suo e usa quello net10.0. -->
 		<PackageReference Include="Shiny.Maui.Controls" Version="2.1.0" />
+		<!-- Errori, crash e log su Sentry (org mellosofy). Asset net10.0, come MediaElement. -->
+		<PackageReference Include="Sentry.Maui" Version="6.12.1" />
+	</ItemGroup>
+
+	<!-- DSN di Sentry fuori dal repo pubblico: SENTRY_DSN arriva da Canora.csproj.user (ignorato da git) in locale e dal
+	     secret del repo nelle release. Senza, Sentry resta spento (fork, worktree, build di prova). Nell'app pubblicata il
+	     DSN c'è comunque, è fatto per stare nei client: così resta solo fuori dal sorgente. -->
+	<ItemGroup Condition="'$(SENTRY_DSN)' != ''">
+		<AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+			<_Parameter1>SentryDsn</_Parameter1>
+			<_Parameter2>$(SENTRY_DSN)</_Parameter2>
+		</AssemblyAttribute>
 	</ItemGroup>
 
 	<!-- Icone dei pulsanti nell'anteprima della taskbar (Platforms/Windows/Taskbar.cs): accanto all'exe, LoadImage

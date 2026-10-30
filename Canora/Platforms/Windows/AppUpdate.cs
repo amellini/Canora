@@ -34,7 +34,7 @@ static class AppUpdate
 		catch (Exception ex)
 		{
 			// GitHub irraggiungibile o download interrotto: si riprova al prossimo avvio, non vale un errore.
-			System.Diagnostics.Debug.WriteLine(ex);
+			Sentry.SentrySdk.Logger.LogWarning("Aggiornamento non riuscito: {0}", ex.Message);
 		}
 		return true;
 	}

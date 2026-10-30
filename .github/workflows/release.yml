@@ -3,13 +3,16 @@ name: Release
 # Un tag vX.Y.Z (git tag v1.0.0, poi git push origin v1.0.0) compila l'APK per Android, Setup e zip per Windows, dmg e
 # zip per Mac, e li pubblica in una release con quel nome. Le note della release sono il messaggio del tag: annotato, con le novità
 # (git tag -a v1.2.0 --cleanup=verbatim -F note.md, verbatim per tenere i titoli "#"); un tag semplice usa il commit.
-# Secrets del repo: ANDROID_KEYSTORE (il keystore in base64, alias "canora") e ANDROID_KEYSTORE_PASSWORD (la stessa per
-# keystore e chiave).
+# Secrets del repo: ANDROID_KEYSTORE (il keystore in base64, alias "canora"), ANDROID_KEYSTORE_PASSWORD (la stessa per
+# keystore e chiave) e SENTRY_DSN (il csproj lo mette nell'app; senza, Sentry resta spento).
 # YAML vieta i tab nell'indentazione: qui solo spazi.
 
 on:
   push:
     tags: ['v*']
+
+env:
+  SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
 
 permissions:
   contents: write

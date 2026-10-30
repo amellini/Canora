@@ -1,10 +1,10 @@
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Canora.Controls;
 using Canora.Models;
 using Canora.Services;
+using Sentry;
 
 namespace Canora.ViewModels;
 
@@ -89,7 +89,7 @@ public sealed partial class PodcastsViewModel : ObservableObject
 		}
 		catch (Exception ex)
 		{
-			Debug.WriteLine(ex);
+			SentrySdk.CaptureException(ex);
 			SearchFailed = true;
 		}
 		finally
@@ -155,7 +155,7 @@ public sealed partial class PodcastsViewModel : ObservableObject
 		}
 		catch (Exception ex)
 		{
-			Debug.WriteLine(ex);
+			SentrySdk.CaptureException(ex);
 			FeedFailed = Episodes.Count == 0;
 		}
 		finally
@@ -281,7 +281,7 @@ public sealed partial class PodcastsViewModel : ObservableObject
 			}
 			catch (Exception ex)
 			{
-				Debug.WriteLine($"Feed non aggiornato ({podcast.Title}): {ex.Message}");
+				SentrySdk.Logger.LogWarning("Feed non aggiornato ({0}): {1}", podcast.Title, ex.Message);
 			}
 		}
 	}

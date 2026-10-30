@@ -85,7 +85,7 @@ public sealed class CatalogService
 		}
 		catch (Exception ex) when (ex is not OperationCanceledException)
 		{
-			System.Diagnostics.Debug.WriteLine(ex);
+			Sentry.SentrySdk.CaptureException(ex);
 			return [];
 		}
 	}
@@ -243,7 +243,7 @@ public sealed class CatalogService
 			}
 			catch (Exception ex) when (ex is not OperationCanceledException)
 			{
-				System.Diagnostics.Debug.WriteLine(ex);
+				Sentry.SentrySdk.CaptureException(ex);
 				return [];
 			}
 		}

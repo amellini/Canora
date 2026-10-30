@@ -1,9 +1,9 @@
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Canora.Models;
 using Canora.Services;
+using Sentry;
 
 namespace Canora.ViewModels;
 
@@ -172,7 +172,7 @@ public sealed partial class OnboardingViewModel : ObservableObject
 		}
 		catch (Exception ex)
 		{
-			Debug.WriteLine(ex);
+			SentrySdk.CaptureException(ex);
 			SearchMessage = "Impossibile cercare. Controlla la connessione.";
 		}
 		IsSearching = false;
@@ -272,7 +272,7 @@ public sealed partial class OnboardingViewModel : ObservableObject
 		}
 		catch (Exception ex)
 		{
-			Debug.WriteLine(ex);
+			SentrySdk.CaptureException(ex);
 			if (version == shown)
 				Fail();
 		}

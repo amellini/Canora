@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Maui;
+﻿using System.Reflection;
+using CommunityToolkit.Maui;
 using Microsoft.Extensions.Logging;
 using Canora.Controls;
 using Canora.Services;
@@ -11,6 +12,7 @@ namespace Canora;
 
 public static class MauiProgram
 {
+
 	public static MauiApp CreateMauiApp()
 	{
 		var builder = MauiApp.CreateBuilder();
@@ -24,6 +26,15 @@ public static class MauiProgram
 			.UseMauiCommunityToolkitMediaElement(isAndroidForegroundServiceEnabled: true)
 			// IImageService di ShinyImage: copertine in cache su memoria e disco, condivise con ArtworkColor.
 			.UseShinyControls()
+			// Crash, errori (SentrySdk.CaptureException nei catch) e log (SentrySdk.Logger) su Sentry.
+			.UseSentry(options =>
+			{
+				// Messo nell'assembly dal csproj; vuoto (build senza SENTRY_DSN) spegne Sentry.
+				options.Dsn = typeof(MauiProgram).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>()
+					.FirstOrDefault(a => a.Key == "SentryDsn")?.Value ?? "";
+				options.TracesSampleRate = 1.0;
+				options.EnableLogs = true;
+			})
 			.ConfigureFonts(fonts =>
 			{
 				// Montserrat sostituisce Gotham (proprietario) del Figma; Poppins è quello del design.

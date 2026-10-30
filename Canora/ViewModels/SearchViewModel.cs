@@ -1,10 +1,10 @@
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Canora.Models;
 using Canora.Services;
 using Canora.Theming;
+using Sentry;
 
 namespace Canora.ViewModels;
 
@@ -177,7 +177,7 @@ public sealed partial class SearchViewModel : ObservableObject
 			}
 			catch (Exception ex)
 			{
-				Debug.WriteLine(ex); // senza video su YouTube: al tocco lo dirà il player
+				SentrySdk.Logger.LogWarning("Video YouTube non trovato: {0}", ex.Message); // al tocco lo dirà il player
 			}
 		}
 	}
@@ -219,7 +219,7 @@ public sealed partial class SearchViewModel : ObservableObject
 			catch (Exception ex)
 			{
 				if (!token.IsCancellationRequested)
-					Debug.WriteLine(ex);
+					SentrySdk.CaptureException(ex);
 			}
 		}
 	}
