@@ -160,4 +160,17 @@
 		<Setter Property="Aspect" Value="AspectFit" />
 	</Style>
 
+	<!-- Windows: niente KeepItemsInView (il default). Quando cambiano gli elementi, l'handler di MAUI 11
+	     (ItemsViewHandler2.ApplyItemsUpdatingScrollMode) chiama StartBringItemIntoView controllando solo IsLoaded: una
+	     lista in una sezione nascosta (IsVisible False) è caricata ma senza template, WinUI lancia "ItemsRepeater part is
+	     not available" dentro un callback del DispatcherQueue e il processo termina (0xc000027b in CoreMessagingXP, dal
+	     30/10). Le liste si riempiono intere: tenere la posizione basta. Da togliere quando MAUI controlla il template. -->
+	<Style TargetType="CollectionView" ApplyToDerivedTypes="True">
+		<Setter Property="ItemsUpdatingScrollMode">
+			<OnPlatform x:TypeArguments="ItemsUpdatingScrollMode">
+				<On Platform="WinUI" Value="KeepScrollOffset" />
+			</OnPlatform>
+		</Setter>
+	</Style>
+
 </ResourceDictionary>
