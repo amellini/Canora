@@ -18,7 +18,7 @@ public enum RepeatMode { Off, All, One }
 
 // Stato del player condiviso da mini-player e Now Playing. Il MediaElement vive nella pagina radice
 // (deve restare nel visual tree per tutta la vita dell'app) e viene agganciato con Attach.
-public sealed partial class PlayerViewModel(YoutubeClient youtube, LibraryStore library, PodcastStore podcasts, CatalogService catalog, LyricsService lyricsService) : ObservableObject
+public sealed partial class PlayerViewModel(YoutubeClient youtube, LibraryStore library, PodcastStore podcasts, PlayerState state, CatalogService catalog, LyricsService lyricsService) : ObservableObject
 {
 	MediaElement? player;
 	List<Track> queue = [];
@@ -31,6 +31,13 @@ public sealed partial class PlayerViewModel(YoutubeClient youtube, LibraryStore 
 	DateTime progressSaved;
 	// Segnato "Ascoltato" mentre suona: non se ne salva più l'avanzamento, altrimenti tornerebbe "in corso".
 	bool markedListened;
+	// Cambio di brano: finché il nuovo audio non parte, il player riporta ancora posizione e durata del vecchio, che
+	// continua a suonare mentre si carica il nuovo. Quei valori non vanno né mostrati né salvati sul nuovo brano (finivano
+	// sull'episodio sbagliato, con la sua durata). sourceSet: l'audio nuovo è stato impostato, il prossimo "Playing" è suo.
+	volatile bool switching;
+	bool sourceSet;
+	// Brano ripristinato all'avvio e non ancora caricato (vedi Restore): il punto da cui parte quando si preme play.
+	(string Id, double At)? restored;
 
 	// Messaggi brevi per il toast della pagina radice.
 	public event Action<string>? Message;
@@ -175,6 +182,36 @@ public sealed partial class PlayerViewModel(YoutubeClient youtube, LibraryStore 
 		podcasts.EpisodeChanged += OnEpisodeChanged;
 		// Il fondo del gradiente viene dal tema (qui e non nel costruttore: la classe non ne ha uno con corpo).
 		Themes.Changed += () => OnPropertyChanged(nameof(AccentBackground));
+		Restore();
+	}
+
+	// Riapertura dell'app (anche dopo che Android l'ha chiusa): quello che suonava, o era in pausa, ricompare nel
+	// mini-player fermo dov'era. Il player non carica niente: lo fa il play (TogglePlay), così all'avvio niente rete, niente
+	// notifica e nessun URL YouTube che nel frattempo scade.
+	void Restore()
+	{
+		if (state.Load() is not { } saved)
+			return;
+		(queue, index, queueSource, QueueHeader, QueueTitle) = (saved.Queue, saved.Index, saved.Source, saved.Header, saved.Title);
+		var track = Current = queue[index];
+		Duration = saved.Duration > 0 ? saved.Duration : track.Duration?.TotalSeconds ?? 0;
+		// Gli episodi hanno il loro avanzamento (0 se segnati ascoltati); chi era finito (ultimi secondi) riparte da capo.
+		var at = track.IsEpisode ? podcasts.GetPosition(track.Id) : saved.Position;
+		if (Duration > 0 && at > Duration - 10)
+			at = 0;
+		Position = at;
+		restored = (track.Id, at);
+		_ = UpdateAccentAsync(track, CancellationToken.None);
+	}
+
+	// Il player non ha ancora l'audio del brano ripristinato: non c'è niente su cui spostarsi, si segna da dove partirà.
+	bool SeekUnloaded(double seconds)
+	{
+		if (player?.Source is not null || Current is null)
+			return false;
+		Position = seconds;
+		restored = (Current.Id, seconds);
+		return true;
 	}
 
 	void OnPlayerReady(object? sender, EventArgs e)
@@ -188,8 +225,13 @@ public sealed partial class PlayerViewModel(YoutubeClient youtube, LibraryStore 
 
 	void OnEpisodeChanged(string key, double position, bool listened, double duration)
 	{
-		if (key == Current?.Id)
-			markedListened = listened;
+		if (key != Current?.Id)
+			return;
+		markedListened = listened && position == 0; // a mano o a fine file; per la soglia dei 2 minuti si continua a salvare
+		// Stato cambiato a mano o episodio finito: l'avanzamento che il player ha ancora in mano (la fine del file) non vale
+		// più. Senza, cambiando brano verrebbe risalvato e rimetterebbe "Ascoltato" a un episodio appena rimesso "Da ascoltare".
+		if (position == 0)
+			Position = 0;
 	}
 
 	// Stato, fine ed errore: su Windows MediaElement li solleva dal thread di MediaPlayer, e da lì LoadAsync (brano
@@ -208,27 +250,34 @@ public sealed partial class PlayerViewModel(YoutubeClient youtube, LibraryStore 
 				prefetchedFor = index;
 				_ = PrefetchAsync(cts.Token);
 			}
-			// Episodio già iniziato: si riprende da dove lo si era lasciato.
-			if (resumeAt > 0 && player is not null)
+			// Da qui posizione e durata sono quelle del brano nuovo.
+			if (sourceSet)
+				switching = false;
+			// Brano già iniziato: si riprende da dove lo si era lasciato (e per qualche secondo non si salva, i primi
+			// valori arrivano prima che il seek abbia effetto).
+			if (resumeAt > 0 && sourceSet && player is not null)
 			{
 				_ = player.SeekTo(TimeSpan.FromSeconds(resumeAt));
 				resumeAt = 0;
+				progressSaved = DateTime.Now;
 			}
 		}
 		else if (e.NewState == MediaElementState.Paused)
-			SaveEpisodeProgress();
+			SaveProgress();
 	});
 
 	void OnPositionChanged(object? sender, MediaPositionChangedEventArgs e)
 	{
+		if (switching)
+			return; // è ancora il brano di prima (vedi switching)
 		if (player?.Duration > TimeSpan.Zero)
 			Duration = player.Duration.TotalSeconds;
 		if (!isSeeking)
 			Position = e.Position.TotalSeconds;
 		UpdateLyric();
 		CountListen();
-		if (Current is { IsEpisode: true } && DateTime.Now - progressSaved > TimeSpan.FromSeconds(10))
-			SaveEpisodeProgress();
+		if (DateTime.Now - progressSaved > TimeSpan.FromSeconds(10))
+			SaveProgress();
 	}
 
 	void OnMediaEnded(object? sender, EventArgs e) => MainThread.BeginInvokeOnMainThread(() =>
@@ -258,15 +307,23 @@ public sealed partial class PlayerViewModel(YoutubeClient youtube, LibraryStore 
 		}
 	}
 
-	// Avanzamento dell'episodio in corso; oltre il 97% (sigle, saluti finali) conta come ascoltato.
-	void SaveEpisodeProgress()
+	// Dove è arrivato quello che suona: ogni brano nello stato del player (per riaprirlo dov'era), l'episodio anche nel suo
+	// avanzamento. Quando mancano meno di 2 minuti (sigle, saluti, pubblicità in coda; per un episodio breve al più il 10%)
+	// conta come ascoltato, ma la posizione resta: lo si riprende da dove si era. Solo la fine vera e il pulsante
+	// "Ascoltato" la azzerano (vedi PodcastStore.SetListened).
+	void SaveProgress()
 	{
-		if (Current is not { IsEpisode: true } episode || Position <= 0 || resumeAt > 0 || markedListened)
+		if (Current is not { } track || Position <= 0 || resumeAt > 0 || switching || player?.Source is null)
 			return;
 		progressSaved = DateTime.Now;
-		var listened = Duration > 0 && Position / Duration > 0.97;
-		podcasts.SaveProgress(episode.Id, listened ? 0 : Position, listened, Duration);
+		state.SavePosition(Position, Duration);
+		if (!track.IsEpisode || markedListened)
+			return;
+		var listened = Duration > 0 && Duration - Position <= Math.Min(120, Duration * 0.1);
+		podcasts.SaveProgress(track.Id, Position, listened, Duration);
 	}
+
+	void SaveState(double position) => state.Save(queue, index, QueueHeader, QueueTitle, queueSource, position, Duration);
 
 	void OnMediaFailed(object? sender, MediaFailedEventArgs e) => MainThread.BeginInvokeOnMainThread(() =>
 	{
@@ -316,17 +373,23 @@ public sealed partial class PlayerViewModel(YoutubeClient youtube, LibraryStore 
 		if (player is null || i < 0 || i >= queue.Count)
 			return;
 
-		SaveEpisodeProgress(); // l'episodio che si sta lasciando riparte da qui la prossima volta
+		SaveProgress(); // quello che si sta lasciando riparte da qui la prossima volta
+		(switching, sourceSet) = (true, false);
 		markedListened = false;
-		listenCounted = false;
 		loading?.Cancel();
 		var cts = loading = new CancellationTokenSource();
 		index = i;
 		var track = Current = queue[i];
-		Position = 0;
+		// Il brano ripristinato riparte da dove era, un episodio da dove l'aveva lasciato, il resto da capo.
+		resumeAt = restored is { } r && r.Id == track.Id ? r.At : track.IsEpisode ? podcasts.GetPosition(track.Id) : 0;
+		restored = null;
+		listenCounted = resumeAt >= 30; // un brano ripreso oltre i 30 secondi l'ascolto l'ha già contato
+		Position = resumeAt;
 		Duration = track.Duration?.TotalSeconds ?? 0;
 		IsLoading = true;
-		resumeAt = track.IsEpisode ? podcasts.GetPosition(track.Id) : 0;
+		SaveState(resumeAt);
+		if (picked && track.IsEpisode)
+			library.AddRecent(track); // i podcast stanno fra gli ascoltati di recente, come i brani (che entrano dopo l'abbinamento)
 		_ = UpdateAccentAsync(track, cts.Token);
 		Lyrics = null;
 		LyricIndex = -1;
@@ -346,6 +409,7 @@ public sealed partial class PlayerViewModel(YoutubeClient youtube, LibraryStore 
 				player.MetadataArtist = track.Artist;
 				player.MetadataArtworkUrl = track.ThumbUrl;
 				player.ShouldLoopPlayback = false; // negli episodi il pulsante ripeti non c'è
+				sourceSet = true;
 				player.Source = MediaSource.FromUri(uri);
 				(stream, var old) = (null, stream);
 				if (old is not null)
@@ -409,6 +473,7 @@ public sealed partial class PlayerViewModel(YoutubeClient youtube, LibraryStore 
 			player.MetadataArtist = track.Artist;
 			player.MetadataArtworkUrl = track.ThumbUrl;
 			player.ShouldLoopPlayback = episodeVideo is null && Repeat == RepeatMode.One; // negli episodi il ripeti non c'è
+			sourceSet = true;
 #if WINDOWS || MACCATALYST
 			player.Source = MediaSource.FromUri(url);
 #else
@@ -623,7 +688,10 @@ public sealed partial class PlayerViewModel(YoutubeClient youtube, LibraryStore 
 		if (player is null)
 			return;
 		if (Position > 3 || index <= 0)
-			await player.SeekTo(TimeSpan.Zero);
+		{
+			if (!SeekUnloaded(0))
+				await player.SeekTo(TimeSpan.Zero);
+		}
 		else
 			await LoadAsync(index - 1);
 	}
@@ -641,6 +709,8 @@ public sealed partial class PlayerViewModel(YoutubeClient youtube, LibraryStore 
 		var target = Math.Max(Position + seconds, 0);
 		if (Duration > 0)
 			target = Math.Min(target, Duration);
+		if (SeekUnloaded(target))
+			return Task.CompletedTask;
 		Position = target; // la barra si sposta subito, senza aspettare il PositionChanged
 		return player.SeekTo(TimeSpan.FromSeconds(target));
 	}
@@ -683,7 +753,7 @@ public sealed partial class PlayerViewModel(YoutubeClient youtube, LibraryStore 
 	[RelayCommand]
 	async Task SeekCompleted()
 	{
-		if (player is not null)
+		if (player is not null && !SeekUnloaded(Position))
 			await player.SeekTo(TimeSpan.FromSeconds(Position));
 		isSeeking = false;
 	}
@@ -752,6 +822,7 @@ public sealed partial class PlayerViewModel(YoutubeClient youtube, LibraryStore 
 			return;
 		}
 		queue.Insert(index + 1, track);
+		SaveState(Position);
 		Message?.Invoke("Aggiunto in coda");
 	}
 

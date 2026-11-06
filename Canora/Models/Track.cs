@@ -21,6 +21,10 @@ public sealed partial record Track(string Id, string Title, string Artist, TimeS
 	[JsonIgnore]
 	public bool IsEpisode => AudioUrl is not null;
 
+	// Sotto il titolo nelle card degli ascoltati di recente, dove brani e podcast stanno insieme.
+	[JsonIgnore]
+	public string KindText => IsEpisode ? $"Podcast · {Artist}" : $"Brano · {Artist}";
+
 	// Brano del catalogo non ancora abbinato a un video YouTube (lo fa il player quando parte).
 	public const string CatalogPrefix = "dz:";
 

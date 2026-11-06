@@ -199,7 +199,9 @@ public sealed partial class LibraryViewModel : ObservableObject
 	public void ClosePlaylist() => Selected = null;
 
 	[RelayCommand]
-	Task PlayRecent(Track track) => player.PlayAsync(library.Recent, track, "IN RIPRODUZIONE DALLA LIBRERIA", RecentTitle);
+	Task PlayRecent(Track track) => track.IsEpisode
+		? player.PlayAsync([track], track, "IN RIPRODUZIONE DAL PODCAST", track.Artist) // l'episodio da solo, come dal dettaglio del podcast
+		: player.PlayAsync(library.Recent.Where(t => !t.IsEpisode), track, "IN RIPRODUZIONE DALLA LIBRERIA", RecentTitle); // la coda resta di soli brani
 
 	[RelayCommand]
 	Task PlayFromPlaylist(Track track) => Selected is { } playlist ? Play(playlist, track) : Task.CompletedTask;

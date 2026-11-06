@@ -31,7 +31,7 @@
 					<Label Grid.Column="1" Text="{Binding Info}" Style="{StaticResource RowArtist}" FontSize="14" VerticalOptions="Center" />
 				</Grid>
 				<!-- Avanzamento: come la linea del mini-player -->
-				<Grid IsVisible="{Binding InProgress}" HeightRequest="3" Margin="0,2,24,0">
+				<Grid IsVisible="{Binding HasProgressBar}" HeightRequest="3" Margin="0,2,24,0">
 					<BoxView Color="{DynamicResource ProgressTrack}" CornerRadius="1.5" />
 					<BoxView Color="{DynamicResource Accent}" CornerRadius="1.5" AnchorX="0" ScaleX="{Binding Progress}" />
 				</Grid>

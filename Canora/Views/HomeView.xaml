@@ -79,7 +79,7 @@
 							<VerticalStackLayout Padding="15,0,0,0" WidthRequest="188">
 								<ShinyImage Uri="{Binding ArtworkUrl}" Style="{StaticResource CardImage}" />
 								<Label Text="{Binding Title}" Style="{StaticResource CardTitle}" Margin="0,18,0,0" />
-								<Label Text="{Binding Artist, StringFormat='Brano · {0}'}" Style="{StaticResource CardSubtitle}" />
+								<Label Text="{Binding KindText}" Style="{StaticResource CardSubtitle}" />
 								<VerticalStackLayout.GestureRecognizers>
 									<TapGestureRecognizer Command="{Binding PlayRecentCommand, Source={RelativeSource AncestorType={x:Type LibraryViewModel}}}" CommandParameter="{Binding .}" />
 									<LongPressGestureRecognizer Command="{Binding Player.TrackMenuCommand, Source={RelativeSource AncestorType={x:Type LibraryViewModel}}}" CommandParameter="{Binding .}" />

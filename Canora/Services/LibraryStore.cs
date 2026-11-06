@@ -399,11 +399,13 @@ sealed class RecentEntity
 	public string? Album { get; set; }
 	public long? AlbumId { get; set; }
 	public long? ArtistId { get; set; }
+	public string? AudioUrl { get; set; } // solo gli episodi di podcast; colonna aggiunta da CreateTable ai database esistenti
 	[Indexed]
 	public DateTime PlayedAt { get; set; }
 
 	public static RecentEntity From(Track t, DateTime playedAt) => new()
 	{
+		AudioUrl = t.AudioUrl,
 		TrackId = t.Id,
 		Title = t.Title,
 		Artist = t.Artist,
@@ -416,5 +418,5 @@ sealed class RecentEntity
 	};
 
 	public Track ToTrack() => new(TrackId, Title, Artist, DurationTicks is { } ticks ? TimeSpan.FromTicks(ticks) : null, ArtworkUrl)
-		{ Album = Album, AlbumId = AlbumId, ArtistId = ArtistId };
+		{ Album = Album, AlbumId = AlbumId, ArtistId = ArtistId, AudioUrl = AudioUrl };
 }

@@ -84,6 +84,8 @@ public sealed class PodcastStore
 
 	// Unisce il feed appena letto alla cache: aggiorna titoli/URL, non tocca posizione e "ascoltato". Una data vera già
 	// salvata non si sostituisce con una inventata (video di un canale uscito dal feed RSS, vedi PodcastService).
+	// Neanche la durata reale, letta dal player, di un episodio già iniziato: molti feed non la dichiarano o la sbagliano,
+	// e senza quella la riga perde minuti rimasti e barra a ogni refresh.
 	public List<Episode> MergeFeed(string podcastId, List<Episode> fromFeed)
 	{
 		db.Run(c =>
@@ -97,7 +99,8 @@ public sealed class PodcastStore
 						ON CONFLICT(Key) DO UPDATE SET Title = excluded.Title, AudioUrl = excluded.AudioUrl,
 							Published = CASE WHEN excluded.DateUnknown = 1 AND IFNULL(DateUnknown, 0) = 0 THEN Published ELSE excluded.Published END,
 							DateUnknown = excluded.DateUnknown AND IFNULL(DateUnknown, 0),
-							DurationTicks = excluded.DurationTicks, ImageUrl = excluded.ImageUrl
+							DurationTicks = CASE WHEN Position > 0 OR Listened = 1 THEN COALESCE(DurationTicks, excluded.DurationTicks) ELSE excluded.DurationTicks END,
+							ImageUrl = excluded.ImageUrl
 						""", e.Key, e.PodcastId, e.Title, e.AudioUrl, e.Published, e.Duration?.Ticks, e.ImageUrl, e.DateUnknown);
 			});
 			return true;
@@ -105,8 +108,10 @@ public sealed class PodcastStore
 		return LoadEpisodes(podcastId);
 	}
 
+	// Anche di un episodio "Ascoltato": segnato a mano o finito ha la posizione a 0 (si riparte da capo), mentre quello
+	// segnato dai 2 minuti finali la tiene e si riprende da lì.
 	public double GetPosition(string episodeKey) =>
-		db.Run(c => c.Table<EpisodeEntity>().Where(e => e.Key == episodeKey).Select(e => e.Listened ? 0 : e.Position).FirstOrDefault());
+		db.Run(c => c.Table<EpisodeEntity>().Where(e => e.Key == episodeKey).Select(e => e.Position).FirstOrDefault());
 
 	// duration: quella reale letta dal player (0 = sconosciuta). I feed dichiarano spesso durate sbagliate o
 	// nessuna, quindi appena la si conosce sostituisce quella del feed.

@@ -64,11 +64,15 @@ public sealed record Episode(string Key, string PodcastId, string Title, string 
 
 	public bool InProgress => !Listened && Position > 5;
 
+	// Senza durata (feed che non la dichiara e episodio mai riascoltato dopo che il player l'aveva letta) niente barra e
+	// niente badge: non c'è nulla di vero da dire sui minuti rimasti.
+	public bool HasProgressBar => InProgress && Duration is { TotalSeconds: > 0 };
+
 	public double Progress => Duration is { TotalSeconds: > 0 } d ? Math.Clamp(Position / d.TotalSeconds, 0, 1) : 0;
 
 	// Badge della riga: stessa forma del badge durata delle righe brano. "Ascoltato" lo dice già il pulsante pieno.
 	public string Badge => Listened ? ""
-		: InProgress ? $"{Remaining} RIMASTI"
+		: InProgress ? Duration is null ? "" : $"{Remaining} RIMASTI"
 		: IsNew ? "NUOVO"
 		: "";
 

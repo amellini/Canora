@@ -98,6 +98,7 @@ public static class MauiProgram
 		builder.Services.AddSingleton<AppDatabase>();
 		builder.Services.AddSingleton<LibraryStore>();
 		builder.Services.AddSingleton<PodcastStore>();
+		builder.Services.AddSingleton<PlayerState>();
 		builder.Services.AddSingleton<PodcastService>();
 		builder.Services.AddSingleton<CatalogService>();
 		builder.Services.AddSingleton<LyricsService>();
