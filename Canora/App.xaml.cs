@@ -39,6 +39,25 @@ public partial class App : Application
 			{
 				Taskbar.Attach(WinRT.Interop.WindowNative.GetWindowHandle(native), services.GetRequiredService<ViewModels.PlayerViewModel>());
 				MouseDrag.Attach(native);
+				// MAUI 11 dà a ogni pagina modale (i popup, la scelta della playlist) un suo WindowRootView agganciato al
+				// LayoutUpdated della TitleBar. Chiudendo con una modale aperta, il suo smontaggio rifà il layout quando la
+				// finestra di sistema non c'è più: InputNonClientPointerSource.GetForWindowId lancia e il processo termina.
+				// Si chiudono prima le modali, a finestra viva, poi la finestra.
+				native.AppWindow.Closing += async (_, args) =>
+				{
+					if (window.Page is not { Navigation.ModalStack.Count: > 0 } page)
+						return;
+					args.Cancel = true;
+					try
+					{
+						while (page.Navigation.ModalStack.Count > 0)
+							await page.Navigation.PopModalAsync(animated: false);
+					}
+					finally
+					{
+						native.Close();
+					}
+				};
 			}
 		};
 #elif MACCATALYST
