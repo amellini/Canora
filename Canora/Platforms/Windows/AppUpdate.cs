@@ -11,10 +11,27 @@ namespace Canora.WinUI;
 // installati: per loro resta l'invito a scaricare di UpdateCheck.
 static class AppUpdate
 {
+	static UpdateManager NewManager() => new(new GithubSource("https://github.com/amellini/Canora", null, false));
+
+	// Dopo un avvio finito in crash (vedi Program.cs): se c'è una release più nuova la scarica e riavvia su quella,
+	// bloccando l'avvio. Senza aggiornamenti, senza rete o non installata ritorna e l'app parte come sempre.
+	// ponytail: nessuna finestra di avanzamento durante il download; aggiungerla se l'attesa a schermo vuoto pesa.
+	public static void Recover()
+	{
+		var manager = NewManager();
+		if (!manager.IsInstalled)
+			return;
+		var check = Task.Run(() => manager.CheckForUpdatesAsync());
+		if (!check.Wait(TimeSpan.FromSeconds(15)) || check.Result is not { } update)
+			return;
+		Task.Run(() => manager.DownloadUpdatesAsync(update)).GetAwaiter().GetResult();
+		manager.ApplyUpdatesAndRestart(update.TargetFullRelease);
+	}
+
 	// false se l'app non è installata con il Setup.
 	public static async Task<bool> TryAsync()
 	{
-		var manager = new UpdateManager(new GithubSource("https://github.com/amellini/Canora", null, false));
+		var manager = NewManager();
 		if (!manager.IsInstalled)
 			return false;
 		try

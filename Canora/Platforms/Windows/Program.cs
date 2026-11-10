@@ -13,11 +13,42 @@ public static class Program
 	static void Main(string[] args)
 	{
 		VelopackApp.Build().Run();
+
+		// Segnalino di avvio: resta sul disco solo se il processo muore nei primi secondi. Trovarlo vuol dire che
+		// l'avvio precedente è andato in crash, e una versione che va in crash all'avvio non vive abbastanza da
+		// scaricare l'aggiornamento che la correggerebbe (è successo con la 1.4.0): lo si fa qui, senza finestra.
+		var starting = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Canora", "starting");
+		try
+		{
+			if (File.Exists(starting))
+				AppUpdate.Recover();
+			Directory.CreateDirectory(Path.GetDirectoryName(starting)!);
+			File.WriteAllText(starting, "");
+			_ = Task.Delay(TimeSpan.FromSeconds(30)).ContinueWith(_ => Clear(starting));
+			// Chiusura regolare prima dei 30 secondi: Application.Start non ritorna, l'app esce dal processo.
+			AppDomain.CurrentDomain.ProcessExit += (_, _) => Clear(starting);
+		}
+		catch (Exception)
+		{
+			// Disco o rete: la protezione non deve mai impedire l'avvio.
+		}
+
 		WinRT.ComWrappersSupport.InitializeComWrappers();
 		Microsoft.UI.Xaml.Application.Start(_ =>
 		{
 			SynchronizationContext.SetSynchronizationContext(new DispatcherQueueSynchronizationContext(DispatcherQueue.GetForCurrentThread()));
 			new App();
 		});
+	}
+
+	static void Clear(string path)
+	{
+		try
+		{
+			File.Delete(path);
+		}
+		catch (Exception)
+		{
+		}
 	}
 }
