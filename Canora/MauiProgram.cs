@@ -1,6 +1,7 @@
 ﻿using System.Reflection;
 using CommunityToolkit.Maui;
 using Microsoft.Extensions.Logging;
+using Microsoft.Maui.LifecycleEvents;
 using Canora.Controls;
 using Canora.Services;
 using Canora.ViewModels;
@@ -19,6 +20,22 @@ public static class MauiProgram
 		builder
 			.UseMauiApp<App>()
 			.UseMauiCommunityToolkit()
+#if WINDOWS
+			// Un secondo avvio (Program.cs lo reindirizza qui): la finestra già aperta torna in primo piano.
+			.ConfigureLifecycleEvents(events => events.AddWindows(windows => windows.OnAppInstanceActivated((_, _) =>
+			{
+				if (Application.Current?.Windows.FirstOrDefault() is { } window)
+					window.Dispatcher.Dispatch(() =>
+					{
+						if (window.Handler?.PlatformView is Microsoft.UI.Xaml.Window native
+							&& native.AppWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter { State: Microsoft.UI.Windowing.OverlappedPresenterState.Minimized } presenter)
+							presenter.Restore();
+						Application.Current.ActivateWindow(window);
+					});
+				// false: true vorrebbe dire "attivazione gestita, niente finestra", e vale anche per quella del primo avvio.
+				return false;
+			})))
+#endif
 #if ANDROID
 			.UseShiny()
 #endif

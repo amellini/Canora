@@ -1,4 +1,5 @@
 using Microsoft.UI.Dispatching;
+using Microsoft.Windows.AppLifecycle;
 using Velopack;
 
 namespace Canora.WinUI;
@@ -13,6 +14,16 @@ public static class Program
 	static void Main(string[] args)
 	{
 		VelopackApp.Build().Run();
+
+		// Una sola istanza: la prima registra la chiave, le altre le passano l'attivazione (vedi MauiProgram, che porta la
+		// finestra in primo piano) ed escono. Prima del segnalino di avvio: una seconda istanza non deve toccarlo.
+		var instance = AppInstance.FindOrRegisterForKey("com.mellosofy.canora");
+		if (!instance.IsCurrent)
+		{
+			var activation = AppInstance.GetCurrent().GetActivatedEventArgs();
+			Task.Run(() => instance.RedirectActivationToAsync(activation).AsTask()).GetAwaiter().GetResult();
+			return;
+		}
 
 		// Segnalino di avvio: resta sul disco solo se il processo muore nei primi secondi. Trovarlo vuol dire che
 		// l'avvio precedente è andato in crash, e una versione che va in crash all'avvio non vive abbastanza da
