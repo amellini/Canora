@@ -115,7 +115,7 @@ jobs:
 
       - name: Xcode
         # L'Xcode preciso che vuole questa versione di .NET per Mac Catalyst, come in mac.yml.
-        run: sudo xcode-select -s /Applications/Xcode_27.0.app
+        run: sudo xcode-select -s /Applications/Xcode_27.2.app
 
       - name: Dmg e zip Mac
         # App universale (Apple Silicon e Intel) con la firma ad hoc dell'SDK: senza Developer ID né notarizzazione

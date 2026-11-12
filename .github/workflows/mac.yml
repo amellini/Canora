@@ -24,9 +24,9 @@ jobs:
         run: dotnet workload install maui-maccatalyst
 
       - name: Xcode
-        # Ogni versione di .NET per Mac Catalyst vuole un Xcode preciso (l'errore lo nomina): l'rc.2 vuole il 27.0, mentre
-        # l'immagine parte col 27.1. Da aggiornare insieme al workload.
-        run: sudo xcode-select -s /Applications/Xcode_27.0.app
+        # Ogni versione di .NET per Mac Catalyst vuole un Xcode preciso (l'errore lo nomina): la finale (27.2.11039) vuole il
+        # 27.2, mentre l'immagine parte col 27.1. Da aggiornare insieme al workload.
+        run: sudo xcode-select -s /Applications/Xcode_27.2.app
 
       - name: Build
         # Release universale come nelle release (release.yml): si prova l'app che si pubblica, trimming compreso.
