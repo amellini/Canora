@@ -30,7 +30,6 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 11.0.x
-          dotnet-quality: preview
 
       - name: Workload MAUI
         run: dotnet workload install maui-android maui-windows
@@ -110,7 +109,6 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 11.0.x
-          dotnet-quality: preview
 
       - name: Workload MAUI
         run: dotnet workload install maui-maccatalyst
