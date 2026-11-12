@@ -65,22 +65,24 @@
 
 	<ItemGroup>
 		<!-- Versioni MAUI/.NET lasciate alle proprietà del workload/SDK: seguono la banda installata da sole. -->
-		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
-		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="$(BundledNETCoreAppPackageVersion)" />
+		<PackageReference Include="Microsoft.Maui.Controls" Version="11.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="11.0.0" />
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
-		<!-- Asset net10.0-android36.0, gira su net11 per compatibilità in avanti dei TFM. MAUI 11 non concede più
-		     InternalsVisibleTo al toolkit: l'unico codice di MediaElement 10 che usava API interne (PageExtensions)
-		     non ha chiamanti nella build Android. Passare alla prima versione net11 appena esce. -->
-		<PackageReference Include="CommunityToolkit.Maui.MediaElement" Version="10.0.0" />
+		<!-- Dalla 12 ha gli asset net11 (la 10 e la 11 giravano su quelli net10 per compatibilità in avanti). MAUI 11
+		     non concede più InternalsVisibleTo al toolkit. Da riprovare su Android a ogni salto di versione:
+		     PlayerTuning raggiunge a mano ExoPlayer e MediaManager.session. -->
+		<PackageReference Include="CommunityToolkit.Maui.MediaElement" Version="12.0.0" />
 		<!-- Solo per Popup (ActionPopup), come in ChuckWalker che lo usa già su MAUI 11. -->
-		<PackageReference Include="CommunityToolkit.Maui" Version="15.0.1" />
+		<PackageReference Include="CommunityToolkit.Maui" Version="17.0.0" />
 		<PackageReference Include="YoutubeExplode" Version="6.6.3" />
 		<!-- Playlist e recenti. Come in ChuckWalker: la 1.11 porta da sé SQLitePCLRaw 3 + SourceGear.sqlite3 e non
 		     vuole SQLitePCLRaw.bundle_green (che aggiungerebbe un secondo libe_sqlite3.so e due avvisi NU1903). -->
 		<PackageReference Include="sqlite-net-pcl" Version="1.11.285" />
 		<!-- ShinyImage per le copertine remote: cache in memoria e su disco condivisa con ArtworkColor (un download per
 		     copertina, non due). Mac Catalyst non ha un asset suo e usa quello net10.0. -->
-		<PackageReference Include="Shiny.Maui.Controls" Version="2.1.0" />
+		<!-- Non la 2.4.0: chiudendo la finestra su Windows un async void di ShinyImage lancia ObjectDisposedException (SslStream)
+		     e il processo termina (0xc000027b). Provate 2.1.0, 2.2.0, 2.3.0 e 2.3.1: chiudono pulite. -->
+		<PackageReference Include="Shiny.Maui.Controls" Version="2.3.1" />
 		<!-- Errori, crash e log su Sentry (org mellosofy). Asset net10.0, come MediaElement. -->
 		<PackageReference Include="Sentry.Maui" Version="6.12.1" />
 	</ItemGroup>
@@ -112,8 +114,8 @@
 	<!-- Comandi vocali dall'assistente del telefono (Android 16+ AppFunctions): il generatore scrive registrazione,
 	     schema XML e servizio; Hosting.Maui dà UseShiny(). Solo Android, come Platforms/Android/AssistantFunctions.cs. -->
 	<ItemGroup Condition="'$([MSBuild]::GetTargetPlatformIdentifier($(TargetFramework)))' == 'android'">
-		<PackageReference Include="Shiny.Hosting.Maui" Version="6.4.0" />
-		<PackageReference Include="Shiny.AppFunctions" Version="6.4.0" />
+		<PackageReference Include="Shiny.Hosting.Maui" Version="6.5.2" />
+		<PackageReference Include="Shiny.AppFunctions" Version="6.5.2" />
 	</ItemGroup>
 
 </Project>
