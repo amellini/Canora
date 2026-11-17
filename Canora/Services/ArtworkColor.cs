@@ -26,7 +26,8 @@ static partial class ArtworkColor
 
 	// Dalla cache di ShinyImage: la copertina che si vede e quella che si misura sono un solo download (e una
 	// richiesta sola anche quando partono insieme). Le immagini grandi la cache le tiene solo su disco.
-	static async Task<byte[]> BytesAsync(string url, CancellationToken token)
+	// Pubblico per l'anteprima della taskbar su Windows (Platforms/Windows/Taskbar.cs), che usa la stessa copertina.
+	public static async Task<byte[]> BytesAsync(string url, CancellationToken token)
 	{
 		var images = IPlatformApplication.Current!.Services.GetRequiredService<IImageService>();
 		var result = await images.GetAsync(new ImageRequest(url), null, token);
