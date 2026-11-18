@@ -1,4 +1,5 @@
 using System.Globalization;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace Canora.Models;
 
@@ -20,6 +21,9 @@ public sealed record CatalogAlbum(long Id, string Title, string Artist, string C
 
 	public Func<CancellationToken, Task<List<Track>>>? Mix { get; init; }
 
+	// La card dei "Mi piace" in "Per te": al posto della copertina, il cuore sul riquadro.
+	public bool IsLikes { get; init; }
+
 	public bool IsPlaylist => Type is "playlist" or "mix";
 
 	// Sotto la copertina: "Album · Incubus" nei risultati di ricerca, "2001 · Album" nella pagina dell'artista.
@@ -38,4 +42,19 @@ public sealed record CatalogAlbum(long Id, string Title, string Artist, string C
 	};
 
 	public string AlbumLine => string.IsNullOrEmpty(Year) ? Artist : $"{Artist} · {Year}";
+}
+
+public enum ForYouTagKind { All, NewReleases, Genre, Decade }
+
+// Una pillola di "Per te" in Home (LibraryViewModel): quella accesa decide le card sotto. GenreId solo per i generi di
+// Deezer (dai "Mi piace"), Decade per i decenni (1990 = anni 90).
+public sealed partial class ForYouTag(string name, ForYouTagKind kind) : ObservableObject
+{
+	public string Name { get; } = name;
+	public ForYouTagKind Kind { get; } = kind;
+	public long? GenreId { get; init; }
+	public int Decade { get; init; }
+
+	[ObservableProperty]
+	public partial bool IsSelected { get; set; }
 }

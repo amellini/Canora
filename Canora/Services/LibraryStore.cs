@@ -30,6 +30,16 @@ public sealed partial class LibraryStore
 	// Un ascolto in più nel tracker (la Home aggiorna "Per te").
 	public event Action? ListensChanged;
 
+	// "Mi piace" dei brani (non episodi né video dei canali), per chiave artista|titolo come gli ascolti: lo stesso brano è
+	// "dz:<id>" nelle liste e l'id del video nel player. Lock come gli ascolti: le proposte li leggono dal pool.
+	readonly Dictionary<string, LikeEntity> likes = [];
+	readonly Lock likesGate = new();
+
+	// Un "Mi piace" messo o tolto (cuori a schermo, "Per te"); LikeAdded anche a CatalogService, che chiede a Deezer genere
+	// e anno del brano.
+	public event Action? LikesChanged;
+	public event Action<Track>? LikeAdded;
+
 	// Sempre ordinate per ultimo ascolto (o creazione, se mai ascoltate): la più recente in cima.
 	public ObservableCollection<Playlist> Playlists { get; } = [];
 	public ObservableCollection<Track> Recent { get; } = [];
@@ -45,6 +55,7 @@ public sealed partial class LibraryStore
 			c.CreateTable<PlaylistTrackEntity>();
 			c.CreateTable<RecentEntity>();
 			c.CreateTable<ListenEntity>();
+			c.CreateTable<LikeEntity>();
 			ImportOldPreferences(c);
 			var tracks = c.Table<PlaylistTrackEntity>().OrderBy(t => t.Position).ToList().ToLookup(t => t.PlaylistId);
 			var playlists = c.Table<PlaylistEntity>().ToList()
@@ -52,8 +63,10 @@ public sealed partial class LibraryStore
 				.OrderByDescending(p => p.SortKey)
 				.ToList();
 			var recent = c.Table<RecentEntity>().OrderByDescending(r => r.PlayedAt).Take(MaxRecent).ToList().Select(r => r.ToTrack()).ToList();
-			return (playlists, recent, listens: c.Table<ListenEntity>().ToList());
+			return (playlists, recent, listens: c.Table<ListenEntity>().ToList(), likes: c.Table<LikeEntity>().ToList());
 		});
+		foreach (var l in loaded.likes ?? [])
+			likes[l.Key] = l;
 		foreach (var p in loaded.playlists ?? [])
 			Playlists.Add(p);
 		foreach (var t in loaded.recent ?? [])
@@ -216,6 +229,120 @@ public sealed partial class LibraryStore
 		var month = DateTime.Now.AddDays(-ListenDays);
 		lock (listensGate)
 			return [.. listens.Values.Where(l => l.LastPlayed >= month).Select(l => ListenKey(l.Artist, l.Title))];
+	}
+
+	public bool IsLiked(Track track)
+	{
+		if (track.IsEpisode)
+			return false;
+		var key = ListenKey(track.Artist, track.Title);
+		lock (likesGate)
+			return likes.ContainsKey(key);
+	}
+
+	// Mette o toglie il "Mi piace" e dice il nuovo stato. Gli episodi (podcast e video dei canali) non si mettono.
+	public bool ToggleLike(Track track)
+	{
+		if (track.IsEpisode)
+			return false;
+		var key = ListenKey(track.Artist, track.Title);
+		LikeEntity? added = null;
+		lock (likesGate)
+			if (!likes.Remove(key))
+				likes[key] = added = LikeEntity.From(key, track, DateTime.Now);
+		if (added is not null)
+			Write(db => db.InsertOrReplace(added));
+		else
+			Write(db => db.Execute("DELETE FROM LikedTracks WHERE Key = ?", key));
+		LikesChanged?.Invoke();
+		if (added is not null)
+			LikeAdded?.Invoke(track);
+		return added is not null;
+	}
+
+	public int LikedCount
+	{
+		get
+		{
+			lock (likesGate)
+				return likes.Count;
+		}
+	}
+
+	// I brani che piacciono, dal più recente; con decade solo quelli usciti in quel decennio (1990 = anni 90).
+	public List<Track> LikedTracks(int? decade = null)
+	{
+		lock (likesGate)
+			return [.. likes.Values.Where(l => decade is null || l.Year / 10 * 10 == decade).OrderByDescending(l => l.LikedAt).Select(l => l.ToTrack())];
+	}
+
+	// Quelli di cui Deezer non ha ancora detto genere e anno (rete giù quando sono stati messi): si riprova all'avvio.
+	public List<Track> UntaggedLikes()
+	{
+		lock (likesGate)
+			return [.. likes.Values.Where(l => !l.Tagged).Select(l => l.ToTrack())];
+	}
+
+	// Genere e anno dell'album su Deezer (CatalogService), e l'artista se il brano veniva da YouTube. Anche vuoti, se
+	// Deezer non conosce il brano: si chiede una volta sola.
+	public void TagLike(Track track, long? artistId, long? genreId, string? genre, int? year)
+	{
+		var key = ListenKey(track.Artist, track.Title);
+		lock (likesGate)
+		{
+			if (!likes.TryGetValue(key, out var like))
+				return; // tolto nel frattempo
+			like.ArtistId ??= artistId;
+			(like.GenreId, like.Genre, like.Year, like.Tagged) = (genreId, genre, year, true);
+			artistId = like.ArtistId;
+		}
+		Write(db => db.Execute("UPDATE LikedTracks SET ArtistId = ?, GenreId = ?, Genre = ?, Year = ?, Tagged = 1 WHERE Key = ?", artistId, genreId, genre, year, key));
+		LikesChanged?.Invoke();
+	}
+
+	// Gli artisti dei "Mi piace", per numero di brani (a pari merito il più recente), anche di un solo genere: i semi
+	// delle proposte. L'id di Deezer se un loro brano lo ha (gli altri si cercano per nome).
+	public List<(CatalogArtist Artist, int Likes)> LikedArtists(int count, long? genreId = null)
+	{
+		lock (likesGate)
+			return [.. likes.Values.Where(l => l.Artist.Length > 0 && (genreId is null || l.GenreId == genreId))
+				.GroupBy(l => l.Artist.Trim().ToLowerInvariant())
+				.OrderByDescending(g => g.Count()).ThenByDescending(g => g.Max(l => l.LikedAt))
+				.Take(count)
+				.Select(g => (new CatalogArtist(g.Select(l => l.ArtistId).FirstOrDefault(id => id is > 0) ?? 0, g.First().Artist.Trim(), "", "", 0), g.Count()))];
+	}
+
+	// I generi (di Deezer) e i decenni dei "Mi piace", dal più frequente: le pillole di "Per te".
+	public List<(long Id, string Name)> LikedGenres()
+	{
+		lock (likesGate)
+			return [.. likes.Values.Where(l => l.GenreId is > 0 && !string.IsNullOrEmpty(l.Genre))
+				.GroupBy(l => l.GenreId!.Value)
+				.OrderByDescending(g => g.Count())
+				.Select(g => (g.Key, g.First().Genre!))];
+	}
+
+	public List<int> LikedDecades()
+	{
+		lock (likesGate)
+			return [.. likes.Values.Where(l => l.Year is > 1900)
+				.GroupBy(l => l.Year!.Value / 10 * 10)
+				.OrderByDescending(g => g.Count()).ThenByDescending(g => g.Key)
+				.Select(g => g.Key)];
+	}
+
+	// La copertina dell'ultimo brano piaciuto (di un genere), per le card di "Per te".
+	public string? LikedArtwork(long? genreId = null)
+	{
+		lock (likesGate)
+			return likes.Values.Where(l => genreId is null || l.GenreId == genreId).MaxBy(l => l.LikedAt)?.ArtworkUrl;
+	}
+
+	// I brani che piacciono per chiave: le proposte nate dai "Mi piace" non li ripropongono.
+	public HashSet<string> LikedKeys()
+	{
+		lock (likesGate)
+			return [.. likes.Keys];
 	}
 
 	// "Fire (Remastered 2011)" e "fire" sono lo stesso brano: minuscole, senza parentesi né punteggiatura.
@@ -385,6 +512,45 @@ sealed record ListenEntity
 	[Indexed]
 	public DateTime LastPlayed { get; set; }
 
+}
+
+// Un "Mi piace": il brano come le righe delle playlist, più genere e anno dell'album su Deezer (Tagged: già chiesti).
+[Table("LikedTracks")]
+sealed class LikeEntity
+{
+	[PrimaryKey]
+	public string Key { get; set; } = "";
+	public string TrackId { get; set; } = "";
+	public string Title { get; set; } = "";
+	public string Artist { get; set; } = "";
+	public long? DurationTicks { get; set; }
+	public string ArtworkUrl { get; set; } = "";
+	public string? Album { get; set; }
+	public long? AlbumId { get; set; }
+	public long? ArtistId { get; set; }
+	[Indexed]
+	public DateTime LikedAt { get; set; }
+	public bool Tagged { get; set; }
+	public long? GenreId { get; set; }
+	public string? Genre { get; set; }
+	public int? Year { get; set; }
+
+	public static LikeEntity From(string key, Track t, DateTime likedAt) => new()
+	{
+		Key = key,
+		TrackId = t.Id,
+		Title = t.Title,
+		Artist = t.Artist,
+		DurationTicks = t.Duration?.Ticks,
+		ArtworkUrl = t.ArtworkUrl,
+		Album = t.Album,
+		AlbumId = t.AlbumId,
+		ArtistId = t.ArtistId,
+		LikedAt = likedAt,
+	};
+
+	public Track ToTrack() => new(TrackId, Title, Artist, DurationTicks is { } ticks ? TimeSpan.FromTicks(ticks) : null, ArtworkUrl)
+		{ Album = Album, AlbumId = AlbumId, ArtistId = ArtistId };
 }
 
 [Table("RecentTracks")]

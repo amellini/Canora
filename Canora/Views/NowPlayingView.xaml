@@ -9,15 +9,19 @@
 
 		<!-- Copertina come l'hero delle pagine artista/podcast: da bordo a bordo (annulla il Padding) e alta quanto tutto
 		     lo spazio sopra la barra di avanzamento, con la barra in alto sopra. Titolo e autore in basso.
-		     Al posto del cuore del Figma: "+" per aggiungere a una playlist, col colore del testo dell'hero. -->
-		<Hero x:Name="PlayerHero" SafeAreaEdges="None" Grid.RowSpan="2" Margin="-20,-10,-20,0" HeightRequest="-1" TitleMargin="20,0,64,18"
+		     Il cuore del Figma ("Mi piace") e accanto il "+" per aggiungere a una playlist, col colore del testo dell'hero.
+		     Solo per i brani: gli episodi non hanno né l'uno né l'altro. -->
+		<Hero x:Name="PlayerHero" SafeAreaEdges="None" Grid.RowSpan="2" Margin="-20,-10,-20,0" HeightRequest="-1" TitleMargin="20,0,112,18"
 			  Source="{Binding Current.ArtworkUrl}" Title="{Binding Current.Title}" Subtitle="{Binding Current.Artist}" SubtitleTapped="OnArtistTapped">
-			<Grid x:Name="AddButton" WidthRequest="48" HeightRequest="48" HorizontalOptions="End" VerticalOptions="End" Margin="0,0,10,12" IsVisible="{Binding CanAddToPlaylist}" SemanticProperties.Description="Aggiungi a playlist">
-				<Image Source="ic_add.png" WidthRequest="28" HeightRequest="28" Tint.Color="{Binding TextColor, Source={x:Reference PlayerHero}}" />
-				<Grid.GestureRecognizers>
-					<TapGestureRecognizer Command="{Binding AddToPlaylistCommand}" />
-				</Grid.GestureRecognizers>
-			</Grid>
+			<HorizontalStackLayout x:Name="AddButton" HorizontalOptions="End" VerticalOptions="End" Margin="0,0,10,12" IsVisible="{Binding CanAddToPlaylist}">
+				<LikeButton Track="{Binding Current}" Color="{Binding TextColor, Source={x:Reference PlayerHero}}" IconSize="28" WidthRequest="48" HeightRequest="48" />
+				<Grid WidthRequest="48" HeightRequest="48" SemanticProperties.Description="Aggiungi a playlist">
+					<Image Source="ic_add.png" WidthRequest="28" HeightRequest="28" Tint.Color="{Binding TextColor, Source={x:Reference PlayerHero}}" />
+					<Grid.GestureRecognizers>
+						<TapGestureRecognizer Command="{Binding AddToPlaylistCommand}" />
+					</Grid.GestureRecognizers>
+				</Grid>
+			</HorizontalStackLayout>
 			<Hero.GestureRecognizers>
 				<PanGestureRecognizer PanUpdated="OnPanUpdated" />
 			</Hero.GestureRecognizers>
@@ -249,8 +253,8 @@
 		</FlexLayout>
 
 		<!-- Windows: titolo e artista a sinistra nella riga dei controlli, come sui player desktop, quando fra il bordo e i
-		     pulsanti c'è posto (vedi UpdateRowTitle); se no restano sulla copertina. Il "+" li segue, come su Spotify. -->
-		<Grid x:Name="RowTitle" Grid.Row="4" Grid.ColumnSpan="2" ColumnDefinitions="Auto,Auto" ColumnSpacing="12" IsVisible="False" HorizontalOptions="Start" VerticalOptions="Center" Margin="15,0,0,0">
+		     pulsanti c'è posto (vedi UpdateRowTitle); se no restano sulla copertina. Cuore e "+" li seguono, come su Spotify. -->
+		<Grid x:Name="RowTitle" Grid.Row="4" Grid.ColumnSpan="2" ColumnDefinitions="Auto,Auto,Auto" ColumnSpacing="12" IsVisible="False" HorizontalOptions="Start" VerticalOptions="Center" Margin="15,0,0,0">
 			<VerticalStackLayout VerticalOptions="Center" Spacing="2">
 				<Label x:Name="RowTitleLabel" Text="{Binding Current.Title}" FontFamily="MontserratBold" FontSize="18" TextColor="{DynamicResource TextPrimary}" LineBreakMode="TailTruncation" />
 				<Label x:Name="RowArtistLabel" Text="{Binding Current.Artist}" FontFamily="MontserratMedium" FontSize="14" TextColor="{DynamicResource TextPrimary}" Opacity="0.7" LineBreakMode="TailTruncation" BackgroundColor="Transparent">
@@ -259,7 +263,8 @@
 					</Label.GestureRecognizers>
 				</Label>
 			</VerticalStackLayout>
-			<Grid Grid.Column="1" WidthRequest="32" HeightRequest="32" VerticalOptions="Center" IsVisible="{Binding CanAddToPlaylist}" SemanticProperties.Description="Aggiungi a playlist">
+			<LikeButton Grid.Column="1" Track="{Binding Current}" WidthRequest="32" HeightRequest="32" VerticalOptions="Center" />
+			<Grid Grid.Column="2" WidthRequest="32" HeightRequest="32" VerticalOptions="Center" IsVisible="{Binding CanAddToPlaylist}" SemanticProperties.Description="Aggiungi a playlist">
 				<Image Source="ic_add.png" WidthRequest="24" HeightRequest="24" Style="{StaticResource Icon}" />
 				<Grid.GestureRecognizers>
 					<TapGestureRecognizer Command="{Binding AddToPlaylistCommand}" />

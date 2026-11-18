@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<!-- "Songs Section" della Playlist Screen: copertina, titolo, album, badge + artista, menu ⋮. Il badge "LYRICS" del
+<!-- "Songs Section" della Playlist Screen: copertina, titolo, album, badge + artista, cuore, menu ⋮. Il badge "LYRICS" del
      design qui mostra la durata (i testi non ci sono). Sul telefono tre righe (titolo, album, durata e artista), così
      l'album non si taglia; su Windows due, con "Album · Artista" sulla seconda (vedi code-behind).
      In riproduzione: titolo nell'accento e le barre dell'equalizzatore sulla copertina. -->
 <ContentView x:Class="Canora.Controls.TrackRow"
 			 x:Name="Root"
 			 x:DataType="Track">
-	<Grid x:Name="RowGrid" ColumnDefinitions="61,*,36" ColumnSpacing="8" HeightRequest="65">
+	<Grid x:Name="RowGrid" ColumnDefinitions="61,*,36,36" ColumnSpacing="8" HeightRequest="65">
 		<Grid x:Name="Cover" WidthRequest="61" HeightRequest="61" VerticalOptions="Center">
 			<!-- Finché la copertina non c'è (o se manca) il riquadro, come nelle altre righe -->
 			<BoxView Fill="{DynamicResource PlaylistCover}" />
@@ -42,7 +42,9 @@
 				</Grid>
 			</Grid>
 		</VerticalStackLayout>
-		<Grid Grid.Column="2" SemanticProperties.Description="Altre opzioni">
+		<!-- Cuore dei "Mi piace": il tocco lo mette o lo toglie, il resto della riga fa partire il brano -->
+		<LikeButton Grid.Column="2" Track="{Binding .}" />
+		<Grid Grid.Column="3" SemanticProperties.Description="Altre opzioni">
 			<Image Source="ic_dots_row.png" WidthRequest="10" HeightRequest="25" HorizontalOptions="End" Style="{StaticResource Icon}" />
 			<Grid.GestureRecognizers>
 				<TapGestureRecognizer Command="{Binding MenuCommand, Source={x:Reference Root}}" CommandParameter="{Binding .}" />

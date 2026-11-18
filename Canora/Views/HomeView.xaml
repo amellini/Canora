@@ -32,35 +32,70 @@
 					</Image>
 				</Grid>
 
-				<!-- Per te: la scelta della settimana e 4 compilation (generi della presentazione, poi artisti più ascoltati),
-				     le stesse card di "Ascoltati di recente" -->
-				<Label Text="Per te" Style="{StaticResource SectionTitle}" Margin="0,0,0,21" IsVisible="{Binding HasForYou}" />
-				<CollectionView ItemsSource="{Binding ForYou}" IsVisible="{Binding HasForYou}" HeightRequest="252" Margin="-16,0,-16,44" SelectionMode="None" HorizontalScrollBarVisibility="Never">
-					<CollectionView.ItemsLayout>
-						<LinearItemsLayout Orientation="Horizontal" />
-					</CollectionView.ItemsLayout>
-					<CollectionView.Header>
-						<BoxView WidthRequest="1" />
-					</CollectionView.Header>
-					<CollectionView.Footer>
-						<BoxView WidthRequest="16" />
-					</CollectionView.Footer>
-					<CollectionView.ItemTemplate>
-						<DataTemplate x:DataType="CatalogAlbum">
-							<VerticalStackLayout Padding="15,0,0,0" WidthRequest="188" SemanticProperties.Description="{Binding Title}">
-								<Grid WidthRequest="173" HeightRequest="175">
-									<BoxView Fill="{DynamicResource PlaylistCover}" />
-									<ShinyImage Uri="{Binding Cover}" Style="{StaticResource CardImage}" />
-								</Grid>
-								<Label Text="{Binding Title}" Style="{StaticResource CardTitle}" Margin="0,18,0,0" />
-								<Label Text="{Binding Artist}" Style="{StaticResource CardSubtitle}" />
-								<VerticalStackLayout.GestureRecognizers>
-									<TapGestureRecognizer Command="{Binding OpenForYouCommand, Source={RelativeSource AncestorType={x:Type LibraryViewModel}}}" CommandParameter="{Binding .}" />
-								</VerticalStackLayout.GestureRecognizers>
-							</VerticalStackLayout>
-						</DataTemplate>
-					</CollectionView.ItemTemplate>
-				</CollectionView>
+				<!-- Per te: la scelta della settimana, i "Mi piace" e i loro simili, 4 compilation (generi della presentazione,
+				     poi artisti più ascoltati), le stesse card di "Ascoltati di recente". Le pillole sopra le cambiano: nuove
+				     uscite, generi e decenni. -->
+				<Label Text="Per te" Style="{StaticResource SectionTitle}" Margin="0,0,0,16" IsVisible="{Binding HasForYou}" />
+				<!-- Pillole come i filtri della ricerca (piena = accesa, bordata = spenta), una sola accesa; scorrono fino ai bordi -->
+				<ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never" Margin="-16,0,-16,21" IsVisible="{Binding HasForYou}">
+					<HorizontalStackLayout Spacing="8" Padding="16,0" BindableLayout.ItemsSource="{Binding Tags}">
+						<BindableLayout.ItemTemplate>
+							<DataTemplate x:DataType="ForYouTag">
+								<Border Style="{StaticResource Chip}" SemanticProperties.Description="{Binding Name}">
+									<Border.Triggers>
+										<DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True">
+											<Setter Property="BackgroundColor" Value="{DynamicResource TextPrimary}" />
+											<Setter Property="Stroke" Value="{DynamicResource TextPrimary}" />
+										</DataTrigger>
+									</Border.Triggers>
+									<Label Text="{Binding Name}" Style="{StaticResource ChipText}">
+										<Label.Triggers>
+											<DataTrigger TargetType="Label" Binding="{Binding IsSelected}" Value="True">
+												<Setter Property="TextColor" Value="{DynamicResource Background}" />
+											</DataTrigger>
+										</Label.Triggers>
+									</Label>
+									<Border.GestureRecognizers>
+										<TapGestureRecognizer Command="{Binding SelectTagCommand, Source={RelativeSource AncestorType={x:Type LibraryViewModel}}}" CommandParameter="{Binding .}" />
+									</Border.GestureRecognizers>
+								</Border>
+							</DataTemplate>
+						</BindableLayout.ItemTemplate>
+					</HorizontalStackLayout>
+				</ScrollView>
+				<!-- Le card restano sempre visibili (anche vuote mentre carica una pillola): sopra, la rotella o il messaggio -->
+				<Grid IsVisible="{Binding HasForYou}" HeightRequest="252" Margin="0,0,0,44">
+					<CollectionView ItemsSource="{Binding ForYou}" Margin="-16,0" SelectionMode="None" HorizontalScrollBarVisibility="Never">
+						<CollectionView.ItemsLayout>
+							<LinearItemsLayout Orientation="Horizontal" />
+						</CollectionView.ItemsLayout>
+						<CollectionView.Header>
+							<BoxView WidthRequest="1" />
+						</CollectionView.Header>
+						<CollectionView.Footer>
+							<BoxView WidthRequest="16" />
+						</CollectionView.Footer>
+						<CollectionView.ItemTemplate>
+							<DataTemplate x:DataType="CatalogAlbum">
+								<VerticalStackLayout Padding="15,0,0,0" WidthRequest="188" SemanticProperties.Description="{Binding Title}">
+									<Grid WidthRequest="173" HeightRequest="175">
+										<BoxView Fill="{DynamicResource PlaylistCover}" />
+										<!-- "I tuoi Mi piace": il cuore al posto della copertina -->
+										<Image Source="ic_heart_filled.png" WidthRequest="64" HeightRequest="64" Tint.Color="{DynamicResource Accent}" IsVisible="{Binding IsLikes}" />
+										<ShinyImage Uri="{Binding Cover}" Style="{StaticResource CardImage}" />
+									</Grid>
+									<Label Text="{Binding Title}" Style="{StaticResource CardTitle}" Margin="0,18,0,0" />
+									<Label Text="{Binding Artist}" Style="{StaticResource CardSubtitle}" />
+									<VerticalStackLayout.GestureRecognizers>
+										<TapGestureRecognizer Command="{Binding OpenForYouCommand, Source={RelativeSource AncestorType={x:Type LibraryViewModel}}}" CommandParameter="{Binding .}" />
+									</VerticalStackLayout.GestureRecognizers>
+								</VerticalStackLayout>
+							</DataTemplate>
+						</CollectionView.ItemTemplate>
+					</CollectionView>
+					<ActivityIndicator IsRunning="{Binding IsForYouLoading}" IsVisible="{Binding IsForYouLoading}" Color="{DynamicResource Accent}" HorizontalOptions="Center" VerticalOptions="Center" />
+					<Label Text="{Binding ForYouMessage}" IsVisible="{Binding HasForYouMessage}" Style="{StaticResource Caption}" HorizontalOptions="Center" VerticalOptions="Center" HorizontalTextAlignment="Center" />
+				</Grid>
 
 				<!-- Trending Section → Ascoltati di recente -->
 				<Label Text="Ascoltati di recente" Style="{StaticResource SectionTitle}" Margin="0,0,0,21" IsVisible="{Binding HasRecent}" />

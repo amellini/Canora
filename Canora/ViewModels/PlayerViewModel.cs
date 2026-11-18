@@ -797,13 +797,16 @@ public sealed partial class PlayerViewModel(YoutubeClient youtube, LibraryStore 
 	{
 		const string add = "Aggiungi a playlist";
 		const string enqueue = "Aggiungi in coda";
+		var like = library.IsLiked(track) ? "Togli dai Mi piace" : "Mi piace";
 		var removeLabel = removeFrom is null ? null : $"Rimuovi da «{removeFrom}»";
-		// Gli episodi non vanno nelle playlist (come il "+" nascosto nel player).
-		List<string> actions = track.IsEpisode ? [enqueue] : [add, enqueue];
+		// Gli episodi non vanno nelle playlist né nei "Mi piace" (come "+" e cuore nascosti nel player).
+		List<string> actions = track.IsEpisode ? [enqueue] : [like, add, enqueue];
 		if (removeLabel is not null)
 			actions.Add(removeLabel);
 		var choice = await ActionPopup.ShowAsync(track.Title, track.Artist, [.. actions]);
-		if (choice == add)
+		if (choice == like)
+			Message?.Invoke(library.ToggleLike(track) ? "Aggiunto ai Mi piace" : "Tolto dai Mi piace");
+		else if (choice == add)
 			await AddToPlaylist(track);
 		else if (choice == enqueue)
 			await Enqueue(track);

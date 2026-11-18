@@ -31,7 +31,7 @@ public partial class NowPlayingView : ContentView
 		SideShade.IsVisible = false;
 		BottomShade.HeightRequest = DesktopControls + 40;
 		Karaoke.Padding = new Thickness(0, 0, 0, DesktopControls);
-		PlayerHero.TitleMargin = new Thickness(20, 0, 64, DesktopControls + 18);
+		PlayerHero.TitleMargin = new Thickness(20, 0, 112, DesktopControls + 18);
 		AddButton.Margin = new Thickness(0, 0, 10, DesktopControls + 12);
 		Rail.SetDynamicResource(BoxView.ColorProperty, "ProgressTrack"); // SeekRail, scuro, sparisce sulla velatura
 #if WINDOWS
@@ -61,8 +61,8 @@ public partial class NowPlayingView : ContentView
 		var inner = width - Root.Padding.HorizontalThickness;
 		Buttons.WidthRequest = Math.Min(DesktopButtons, inner - Buttons.Margin.HorizontalThickness);
 		var room = (inner - DesktopButtons) / 2 - RowTitle.Margin.Left - 24;
-		// Il "+" (32 + 12 di spazio) segue il testo: titolo e artista si tagliano prima.
-		RowTitleLabel.MaximumWidthRequest = RowArtistLabel.MaximumWidthRequest = Math.Max(room - 44, 0);
+		// Cuore e "+" (2 × (32 + 12 di spazio)) seguono il testo: titolo e artista si tagliano prima.
+		RowTitleLabel.MaximumWidthRequest = RowArtistLabel.MaximumWidthRequest = Math.Max(room - 88, 0);
 		// Lo stesso spazio a destra per il volume: lo slider si accorcia fino a 60, sotto sparisce (icona e margini: 40).
 		VolumeSlider.WidthRequest = Math.Clamp(room - 40, 0, 140);
 		VolumeBar.IsVisible = VolumeSlider.WidthRequest >= 60;
@@ -75,7 +75,7 @@ public partial class NowPlayingView : ContentView
 			PlayerHero.RemoveBinding(Hero.TitleProperty);
 			PlayerHero.RemoveBinding(Hero.SubtitleProperty);
 			PlayerHero.Title = PlayerHero.Subtitle = null;
-			AddButton.RemoveBinding(IsVisibleProperty); // il "+" passa accanto al titolo nella riga
+			AddButton.RemoveBinding(IsVisibleProperty); // cuore e "+" passano accanto al titolo nella riga
 			AddButton.IsVisible = false;
 		}
 		else
@@ -146,7 +146,7 @@ public partial class NowPlayingView : ContentView
 		}
 		LandscapeShade.IsVisible = landscape;
 		Karaoke.Padding = landscape ? new Thickness(inset.Left, inset.Top, ControlsWidth + inset.Right, BarHeight + inset.Bottom) : 0;
-		PlayerHero.TitleMargin = landscape ? new Thickness(edge.Left, 0, ControlsWidth + inset.Right + 64, BarHeight + inset.Bottom + 18) : new Thickness(20, 0, 64, 18);
+		PlayerHero.TitleMargin = landscape ? new Thickness(edge.Left, 0, ControlsWidth + inset.Right + 112, BarHeight + inset.Bottom + 18) : new Thickness(20, 0, 112, 18);
 		AddButton.Margin = landscape ? new Thickness(0, 0, ControlsWidth + inset.Right + 10, BarHeight + inset.Bottom + 12) : new Thickness(0, 0, 10, 12);
 
 		var scale = landscape ? LandscapeScale : 1 / LandscapeScale;

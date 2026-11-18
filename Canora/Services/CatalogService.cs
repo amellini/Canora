@@ -40,6 +40,8 @@ public sealed class CatalogService
 		this.library = library;
 		db.Run(c => c.CreateTable<CatalogMatchEntity>());
 		NowPlaying.Matched = KnownVideo;
+		library.LikeAdded += track => _ = TagAsync(track);
+		_ = TagMissingAsync();
 	}
 
 	public sealed record Results(List<CatalogArtist> Artists, List<CatalogAlbum> Albums, List<Track> Tracks, List<CatalogAlbum> Playlists);
@@ -172,11 +174,13 @@ public sealed class CatalogService
 	const string WeeklyPickKey = "WeeklyPick";
 	const string WeeklyPickWeekKey = "WeeklyPickWeek";
 
-	// Da dove parte la scelta della settimana: gli artisti più ascoltati negli ultimi 7 giorni, completati con quelli della
-	// presentazione (Profile), 4 in tutto. Plays pesa LB Radio: 1 per quelli della presentazione.
+	// Da dove parte la scelta della settimana: gli artisti più ascoltati negli ultimi 7 giorni, completati con quelli dei
+	// "Mi piace" e poi della presentazione (Profile), 4 in tutto. Plays pesa LB Radio: i brani piaciuti per i "Mi piace",
+	// 1 per quelli della presentazione.
 	public List<(CatalogArtist Artist, int Plays)> WeeklySeeds() =>
 	[
 		.. library.TopArtists(7, 4).Select(a => (new CatalogArtist(0, a.Artist, "", "", 0), a.Plays))
+			.Concat(library.LikedArtists(4))
 			.Concat(Profile.Artists.Select(a => (a, 1)))
 			.DistinctBy(s => s.Item1.Name.Trim().ToLowerInvariant())
 			.Take(4),
@@ -221,6 +225,142 @@ public sealed class CatalogService
 	// Compilation di un artista degli ascolti, quando i generi non bastano a farne 4: la sua radio.
 	public Task<List<Track>> ArtistMixAsync(string artist, CancellationToken token) =>
 		BlendAsync([() => RadioAsync(new CatalogArtist(0, artist, "", "", 0), token)], [], _ => true);
+
+	// --- "Mi piace": genere e anno dei brani, e le proposte che ne nascono (card e pillole di "Per te") ---
+
+	// Genere e anno dell'album del brano su Deezer. Un video YouTube non ha l'album: si cerca "artista titolo" e si prende
+	// il primo con lo stesso artista (la ricerca avanzata artist:"…" track:"…" non risponde più). Un errore di rete lascia
+	// il brano da rifare al prossimo avvio; uno che Deezer non conosce resta senza genere.
+	// ponytail: l'anno è quello dell'album, quindi una raccolta o una ristampa sposta il brano nel suo decennio.
+	async Task TagAsync(Track track)
+	{
+		try
+		{
+			var (albumId, artistId) = (track.AlbumId, track.ArtistId);
+			if (albumId is null)
+			{
+				var found = await GetAsync(DeezerJson.Default.DzListDzTrack, $"search/track?q={Uri.EscapeDataString($"{track.Artist} {track.Title}")}&limit=5", CancellationToken.None);
+				var hit = found.Data.FirstOrDefault(t => string.Equals(t.Artist?.Name, track.Artist, StringComparison.OrdinalIgnoreCase));
+				(albumId, artistId) = (hit?.Album?.Id, artistId ?? hit?.Artist?.Id);
+			}
+			var album = albumId is { } id ? await GetAsync(DeezerJson.Default.DzAlbum, $"album/{id}", CancellationToken.None) : null;
+			var genre = album?.Genres?.Data.FirstOrDefault(g => g.Id > 0);
+			int? year = album?.ReleaseDate is { Length: >= 4 } date && int.TryParse(date[..4], out var y) && y > 1900 ? y : null;
+			library.TagLike(track, artistId, genre?.Id, genre?.Name, year);
+		}
+		catch (Exception ex)
+		{
+			Sentry.SentrySdk.Logger.LogWarning("Genere del brano piaciuto non letto: {0}", ex.Message);
+		}
+	}
+
+	// Uno alla volta: Deezer accetta 50 richieste ogni 5 secondi.
+	async Task TagMissingAsync()
+	{
+		foreach (var track in library.UntaggedLikes())
+			await TagAsync(track);
+	}
+
+	// "Simili ai Mi piace": le radio di Deezer degli artisti con più "Mi piace", senza i brani che piacciono già. Rifatto a
+	// ogni apertura.
+	// ponytail: senza login Deezer non dà proposte per brano (né track/{id}/related né le raccomandazioni dell'utente): i
+	// "Mi piace" fanno da semi alle radio dei loro artisti, che mescolano l'artista e i suoi simili.
+	public Task<List<Track>> LikedMixAsync(CancellationToken token) =>
+		BlendAsync([.. library.LikedArtists(5).Select(a => (Func<Task<List<Track>>>)(() => RadioAsync(a.Artist, token)))], library.LikedKeys(), _ => true);
+
+	// Pillola "Nuove uscite": album e singoli degli ultimi 4 mesi degli artisti dei "Mi piace", dei più ascoltati nel mese
+	// e della presentazione (12 al massimo), dal più recente, poi "Radar Weekly" dei redattori di Deezer.
+	// editorial/{id}/releases risponde vuoto per ogni genere. Una volta al giorno, finché gli artisti restano quelli.
+	(string Key, List<CatalogAlbum> Cards)? releases;
+
+	public async Task<List<CatalogAlbum>> NewReleasesAsync(CancellationToken token)
+	{
+		List<CatalogArtist> artists =
+		[
+			.. library.LikedArtists(8).Select(a => a.Artist)
+				.Concat(library.TopArtists(30, 8).Select(a => new CatalogArtist(0, a.Artist, "", "", 0)))
+				.Concat(Profile.Artists)
+				.DistinctBy(a => a.Name.Trim().ToLowerInvariant())
+				.Take(12),
+		];
+		var key = $"{DateTime.Today:yyyy-MM-dd}|{string.Join('|', artists.Select(a => a.Name))}";
+		if (releases is { } cached && cached.Key == key)
+			return cached.Cards;
+		var (since, today) = (DateTime.Today.AddDays(-120).ToString("yyyy-MM-dd"), DateTime.Today.ToString("yyyy-MM-dd"));
+		var radar = EditorPlaylistAsync("radar weekly", token);
+		var found = await Task.WhenAll(artists.Select(async Task<List<CatalogAlbum>> (artist) =>
+		{
+			try
+			{
+				if (artist.Id == 0 && await FindArtistAsync(artist.Name, token) is { } known)
+					artist = known;
+				if (artist.Id == 0)
+					return [];
+				var albums = await GetAsync(DeezerJson.Default.DzListDzAlbum, $"artist/{artist.Id}/albums?limit=10", token);
+				// Le date sono "aaaa-mm-gg": il confronto fra stringhe basta. Le uscite annunciate (data futura) non si suonano.
+				var name = artist.Name;
+				return [.. albums.Data.Where(a => string.CompareOrdinal(a.ReleaseDate, since) >= 0 && string.CompareOrdinal(a.ReleaseDate, today) <= 0)
+					.Select(a => ToAlbum(a, name))];
+			}
+			catch (Exception ex) when (ex is not OperationCanceledException)
+			{
+				Sentry.SentrySdk.Logger.LogWarning("Uscite di {0} non lette: {1}", artist.Name, ex.Message);
+				return [];
+			}
+		}));
+		List<CatalogAlbum> cards = [.. found.SelectMany(a => a).DistinctBy(a => a.Id).OrderByDescending(a => a.Released)];
+		if (await radar is { } weekly)
+			cards.Add(weekly);
+		releases = (key, cards);
+		return cards;
+	}
+
+	// Pillola di un genere: le playlist in classifica del genere su Deezer, o quelle trovate per nome se non è un genere di
+	// Deezer ("Cantautori", "Rock italiano"). Il mix del genere lo mette in testa LibraryViewModel.
+	public async Task<List<CatalogAlbum>> GenrePlaylistsAsync(string genre, long? genreId, CancellationToken token)
+	{
+		var id = genreId ?? await GenreAsync(genre);
+		var found = id is { } g
+			? await GetAsync(DeezerJson.Default.DzListDzPlaylist, $"chart/{g}/playlists?limit=10", token)
+			: await GetAsync(DeezerJson.Default.DzListDzPlaylist, $"search/playlist?q={Uri.EscapeDataString(GenreQuery(genre))}&limit=10", token);
+		return [.. found.Data.Select(ToPlaylist)];
+	}
+
+	// Pillola di un decennio (1990 = anni 90): le playlist dei redattori di Deezer per i tuoi generi in quel decennio
+	// ("rock 90s", "jazz 60s"), poi quella delle hit ("90s hits"). Solo dei redattori: le ricerche in italiano ("rock anni
+	// 90") danno soprattutto playlist di utenti, lunghe e disordinate.
+	// ponytail: il genere diventa una parola inglese togliendo "essentials"/"hits" dalla sua ricerca; i generi italiani
+	// ("rap italiano 90s") di solito non trovano nulla e restano fuori.
+	public async Task<List<CatalogAlbum>> DecadePlaylistsAsync(int decade, IEnumerable<string> genres, CancellationToken token)
+	{
+		var label = decade < 2000 ? $"{decade % 100:00}s" : $"{decade}s";
+		var queries = genres.Select(g => $"{GenreQuery(g).Replace(" essentials", "").Replace(" hits", "").Split('/')[^1].Trim()} {label}")
+			.Append($"{label} hits")
+			.Distinct(StringComparer.OrdinalIgnoreCase);
+		// Il decennio deve stare nel titolo ("'90s Rock", "00s Hits"): "punk 90s" trova anche "Punk Essentials".
+		var found = await Task.WhenAll(queries.Select(q => EditorPlaylistAsync(q, token, $"{decade % 100:00}s")));
+		return [.. found.OfType<CatalogAlbum>().DistinctBy(p => p.Id)];
+	}
+
+	// La playlist dei redattori di Deezer ("Rod - Deezer Rock Editor") per una ricerca, o null: fra le loro, quella col
+	// titolo che ha più parole della ricerca ("90s hits": "90s Hits" e non "Fitness 90s"), e con required se c'è.
+	async Task<CatalogAlbum?> EditorPlaylistAsync(string query, CancellationToken token, string? required = null)
+	{
+		try
+		{
+			var found = await GetAsync(DeezerJson.Default.DzListDzPlaylist, $"search/playlist?q={Uri.EscapeDataString(query)}&limit=8", token);
+			var words = query.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+			return found.Data
+				.Where(p => p.User?.Name.Contains("Deezer", StringComparison.OrdinalIgnoreCase) == true
+					&& (required is null || p.Title.Contains(required, StringComparison.OrdinalIgnoreCase)))
+				.MaxBy(p => words.Count(w => p.Title.Contains(w, StringComparison.OrdinalIgnoreCase))) is { } playlist ? ToPlaylist(playlist) : null;
+		}
+		catch (Exception ex) when (ex is not OperationCanceledException)
+		{
+			Sentry.SentrySdk.Logger.LogWarning("Playlist «{0}» non trovata: {1}", query, ex.Message);
+			return null;
+		}
+	}
 
 	// Le fonti si alternano un brano a testa fino a 40, senza doppioni né brani in seen (gli ascoltati, per la scelta della
 	// settimana); keep scarta il resto. Ogni fonte che fallisce manca e basta.
@@ -472,6 +612,7 @@ public sealed class DzAlbum
 	public string? RecordType { get; set; }
 	public DzArtist? Artist { get; set; }
 	public DzList<DzTrack>? Tracks { get; set; }
+	public DzList<DzGenre>? Genres { get; set; } // solo album/{id}: il genere dei "Mi piace"
 }
 
 public sealed class DzTrack
