@@ -60,6 +60,14 @@
 					</Grid.GestureRecognizers>
 				</Grid>
 			</VerticalStackLayout>
+			<!-- In fondo, come l'ingranaggio della Activity Bar di VS Code: le Impostazioni (la stessa pagina dell'icona della Home) -->
+			<Grid HeightRequest="48" ColumnDefinitions="56,*" VerticalOptions="End" Margin="0,0,0,8" BackgroundColor="Transparent" ToolTipProperties.Text="Impostazioni" SemanticProperties.Description="Impostazioni">
+				<Image Source="ic_settings.png" WidthRequest="36" HeightRequest="24" Aspect="AspectFit" Tint.Color="{DynamicResource NavInactive}" />
+				<Label x:Name="SideSettingsLabel" Grid.Column="1" Text="Impostazioni" Style="{StaticResource NavLabel}" FontSize="14" HorizontalTextAlignment="Start" VerticalOptions="Center" />
+				<Grid.GestureRecognizers>
+					<TapGestureRecognizer Tapped="OnSettingsTapped" />
+				</Grid.GestureRecognizers>
+			</Grid>
 			<BoxView Grid.Column="1" Color="{DynamicResource SeekRail}" />
 		</Grid>
 

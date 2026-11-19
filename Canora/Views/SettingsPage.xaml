@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <!-- Impostazioni (dall'icona della Home): pagina modale come la scelta della playlist. Scelta del tema (si applica
-     subito) e pulizia della cronologia. -->
+     subito), pulizia della cronologia e della cache audio. -->
 <ContentPage x:Class="Canora.Views.SettingsPage"
 			 x:DataType="LibraryViewModel"
 			 Background="{DynamicResource LibraryBackground}"
@@ -140,6 +140,17 @@
 						</Border.GestureRecognizers>
 					</Border>
 				</VerticalStackLayout>
+
+				<!-- Cache audio (vedi Services/AudioCache): quanto occupa, e come svuotarla -->
+				<Label Text="Cache" Style="{StaticResource SubsectionTitle}" Margin="18,30,18,8" />
+				<Label Text="I brani che ascolti, e gli episodi fino a 30 minuti, restano sul dispositivo per ripartire subito, anche dopo una lunga pausa: al massimo 500 MB, ciascuno per 15 giorni dall'ultimo ascolto." Style="{StaticResource Caption}" Margin="18,0,18,6" />
+				<Label Text="{Binding CacheText}" Style="{StaticResource Caption}" Margin="18,0,18,14" />
+				<Border Margin="18,0" StrokeThickness="1" Stroke="{DynamicResource TextPrimary}" StrokeShape="RoundRectangle 22" HeightRequest="44">
+					<Label Text="Svuota cache" FontFamily="MontserratBold" FontSize="14" HorizontalOptions="Center" VerticalOptions="Center" />
+					<Border.GestureRecognizers>
+						<TapGestureRecognizer Command="{Binding ClearCacheCommand}" />
+					</Border.GestureRecognizers>
+				</Border>
 
 				<!-- Facoltativo: il token dell'account ListenBrainz aggiunge le sue proposte alla Scelta settimanale -->
 				<Label Text="ListenBrainz" Style="{StaticResource SubsectionTitle}" Margin="18,30,18,8" />

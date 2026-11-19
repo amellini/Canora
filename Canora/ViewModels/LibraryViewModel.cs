@@ -413,7 +413,7 @@ public sealed partial class LibraryViewModel : ObservableObject
 		return player.ShowTrackMenuAsync(track, playlist.Name, () => library.RemoveFromPlaylist(playlist.Id, track.Id));
 	}
 
-	// Icona impostazioni della Home: pagina a sé (Views/SettingsPage).
+	// Icona impostazioni della Home (su Windows anche in fondo alla barra laterale): pagina a sé (Views/SettingsPage).
 	[RelayCommand]
 	Task Settings() =>
 		Application.Current?.Windows.FirstOrDefault()?.Page is { } root ? root.Navigation.PushModalAsync(new SettingsPage(this)) : Task.CompletedTask;
@@ -431,5 +431,17 @@ public sealed partial class LibraryViewModel : ObservableObject
 	{
 		if (await ActionPopup.ShowAsync("Cancellare le ricerche recenti?", null, "Cancella") == "Cancella")
 			library.ClearSearches();
+	}
+
+	// Spazio della cache audio (vedi AudioCache): si legge a ogni apertura delle Impostazioni (la pagina è nuova ogni volta).
+	public string CacheText => $"Ora occupa {AudioCache.Size / 1048576d:0} MB su 500.";
+
+	[RelayCommand]
+	async Task ClearCache()
+	{
+		if (await ActionPopup.ShowAsync("Svuotare la cache?", "I brani salvati si riscaricano al prossimo ascolto.", "Svuota") != "Svuota")
+			return;
+		await Task.Run(AudioCache.Clear);
+		OnPropertyChanged(nameof(CacheText));
 	}
 }

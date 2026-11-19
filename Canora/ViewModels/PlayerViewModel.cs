@@ -38,6 +38,11 @@ public sealed partial class PlayerViewModel(YoutubeClient youtube, LibraryStore 
 	bool sourceSet;
 	// Brano ripristinato all'avvio e non ancora caricato (vedi Restore): il punto da cui parte quando si preme play.
 	(string Id, double At)? restored;
+	// Cache audio (vedi AudioCache). Il brano partito dalla rete: la sua chiave (streamedKey) e il download da avviare
+	// appena suona (toDownload, null se già avviato o troppo lungo). pausedAt: da quando è in pausa.
+	string? streamedKey;
+	Func<CancellationToken, Task>? toDownload;
+	DateTime? pausedAt;
 
 	// Messaggi brevi per il toast della pagina radice.
 	public event Action<string>? Message;
@@ -183,6 +188,7 @@ public sealed partial class PlayerViewModel(YoutubeClient youtube, LibraryStore 
 		// Il fondo del gradiente viene dal tema (qui e non nel costruttore: la classe non ne ha uno con corpo).
 		Themes.Changed += () => OnPropertyChanged(nameof(AccentBackground));
 		Restore();
+		_ = Task.Run(AudioCache.Trim); // all'avvio: via i brani non ascoltati da 15 giorni
 	}
 
 	// Riapertura dell'app (anche dopo che Android l'ha chiusa): quello che suonava, o era in pausa, ricompare nel
@@ -244,11 +250,30 @@ public sealed partial class PlayerViewModel(YoutubeClient youtube, LibraryStore 
 		if (IsPlaying)
 		{
 			failures = 0;
-			// Partito il brano: ora, senza togliergli banda, si preparano i prossimi.
+			// Ripresa dopo una pausa lunga di un brano partito dalla rete e intanto finito in cache: riparte dal file, da
+			// dove era, qualunque sia il play (app, notifica, cuffie). Lo stream di rete dopo ore va riaperto, e dopo ~6 ore
+			// il suo URL YouTube è scaduto: il brano finirebbe lì.
+			if (pausedAt is { } since)
+			{
+				pausedAt = null;
+				if (DateTime.Now - since > TimeSpan.FromMinutes(1) && streamedKey is { } key && Current is { } paused && AudioCache.Find(key) is not null)
+				{
+					restored = (paused.Id, Position);
+					_ = LoadAsync(index);
+					return;
+				}
+			}
+			// Partito il brano: ora, senza togliergli banda, si preparano i prossimi e lo si scarica nella cache, con il
+			// token del brano (cambiandolo il download si interrompe e il pezzo scaricato si butta).
 			if (prefetchedFor != index && loading is { } cts)
 			{
 				prefetchedFor = index;
 				_ = PrefetchAsync(cts.Token);
+			}
+			if (toDownload is { } download && loading is { } current)
+			{
+				toDownload = null;
+				_ = download(current.Token);
 			}
 			// Da qui posizione e durata sono quelle del brano nuovo.
 			if (sourceSet)
@@ -263,7 +288,10 @@ public sealed partial class PlayerViewModel(YoutubeClient youtube, LibraryStore 
 			}
 		}
 		else if (e.NewState == MediaElementState.Paused)
+		{
+			pausedAt ??= DateTime.Now;
 			SaveProgress();
+		}
 	});
 
 	void OnPositionChanged(object? sender, MediaPositionChangedEventArgs e)
@@ -375,6 +403,7 @@ public sealed partial class PlayerViewModel(YoutubeClient youtube, LibraryStore 
 
 		SaveProgress(); // quello che si sta lasciando riparte da qui la prossima volta
 		(switching, sourceSet) = (true, false);
+		(streamedKey, toDownload, pausedAt) = (null, null, null);
 		markedListened = false;
 		loading?.Cancel();
 		var cts = loading = new CancellationTokenSource();
@@ -401,19 +430,21 @@ public sealed partial class PlayerViewModel(YoutubeClient youtube, LibraryStore 
 			var episodeVideo = track.AudioUrl is { } episodeAudio ? Episode.VideoIdOf(episodeAudio) : null;
 			if (track.AudioUrl is { } audioUrl && episodeVideo is null)
 			{
-				// Episodio: audio diretto dal feed, niente YoutubeExplode.
+				// Episodio: audio diretto dal feed, niente YoutubeExplode. Ascoltato da poco: dal file della cache, senza rete.
+				if (AudioCache.Find(audioUrl) is { } saved)
+				{
+					SetSource(track, MediaSource.FromFile(saved));
+					return;
+				}
 				var uri = await Task.Run(() => PodcastService.ResolveAudioAsync(audioUrl, cts.Token), cts.Token);
 				if (cts.IsCancellationRequested)
 					return;
-				player.MetadataTitle = track.Title;
-				player.MetadataArtist = track.Artist;
-				player.MetadataArtworkUrl = track.ThumbUrl;
-				player.ShouldLoopPlayback = false; // negli episodi il pulsante ripeti non c'è
-				sourceSet = true;
-				player.Source = MediaSource.FromUri(uri);
-				(stream, var old) = (null, stream);
-				if (old is not null)
-					_ = Task.Run(old.Dispose);
+				// Estensione dal feed: l'URL finale spesso non ce l'ha (Spreaker: /episodes/original/57037886), e Windows
+				// riconosce il formato del file da quella.
+				var extension = new[] { new Uri(audioUrl), uri }.Select(u => Path.GetExtension(u.AbsolutePath))
+					.FirstOrDefault(e => e.Length is > 1 and <= 5)?[1..] ?? "mp3";
+				SetSource(track, MediaSource.FromUri(uri), key: audioUrl,
+					download: token => AudioCache.SaveAsync(audioUrl, extension, (path, t) => PodcastService.DownloadAsync(uri, path, t), token));
 				return;
 			}
 
@@ -436,52 +467,40 @@ public sealed partial class PlayerViewModel(YoutubeClient youtube, LibraryStore 
 				_ = LoadLyricsAsync(track, cts.Token); // titolo, artista e durata del catalogo quando ci sono: li cerca meglio
 			}
 			var videoId = episodeVideo ?? track.Id;
+			if (AudioCache.Find(videoId) is { } file)
+			{
+				SetSource(track, MediaSource.FromFile(file));
+				return;
+			}
 
 			// Su un thread del pool: altrimenti le continuation di YoutubeExplode tornano sul thread UI e Android
 			// rifiuta la chiusura delle risposte HTTP lì (NetworkOnMainThreadException).
 #if WINDOWS || MACCATALYST
-			// Media Foundation suona Opus/WebM solo con l'estensione "Web Media Extensions" e AVFoundation (Mac) per
-			// niente: AAC/MP4 c'è sempre. E l'URL e non lo stream: dietro AsRandomAccessStream di MediaElement uno Stream
-			// .NET resta in Opening, mentre l'URL il player di sistema lo scarica da sé con richieste Range, seek compreso.
-			var url = await Task.Run(async () =>
-			{
-				var manifest = await ManifestAsync(videoId).WaitAsync(cts.Token);
-				var audio = manifest.GetAudioOnlyStreams().Where(s => s.Container == Container.Mp4).TryGetWithHighestBitrate()
-					?? manifest.GetAudioOnlyStreams().GetWithHighestBitrate();
-				return audio.Url;
-			}, cts.Token);
-			Stream? next = null;
+			// L'URL e non lo stream: dietro AsRandomAccessStream di MediaElement uno Stream .NET resta in Opening, mentre
+			// l'URL il player di sistema lo scarica da sé con richieste Range, seek compreso.
+			var audio = await Task.Run(async () => PickAudio(await ManifestAsync(videoId).WaitAsync(cts.Token)), cts.Token);
 			if (cts.IsCancellationRequested)
 				return;
+			var source = MediaSource.FromUri(audio.Url);
+			Stream? next = null;
 #else
-			var next = await Task.Run(async () =>
+			var (next, audio) = await Task.Run(async () =>
 			{
-				var manifest = await ManifestAsync(videoId).WaitAsync(cts.Token);
-				var audio = manifest.GetAudioOnlyStreams().GetWithHighestBitrate();
+				var info = PickAudio(await ManifestAsync(videoId).WaitAsync(cts.Token));
 				// GetAsync e non audio.Url: lo stream di YoutubeExplode scarica a segmenti con Range (anti-throttling)
 				// ed è seekable, quindi ExoPlayer può fare seek senza riscaricare tutto.
-				return new SafeStream(await youtube.Videos.Streams.GetAsync(audio, cts.Token));
+				return (new SafeStream(await youtube.Videos.Streams.GetAsync(info, cts.Token)), info);
 			}, cts.Token);
 			if (cts.IsCancellationRequested)
 			{
 				_ = Task.Run(next.Dispose);
 				return;
 			}
+			var source = MediaSource.FromStream(next);
 #endif
-			// I metadata vanno impostati prima di Source: li legge quando prepara la notifica.
-			player.MetadataTitle = track.Title;
-			player.MetadataArtist = track.Artist;
-			player.MetadataArtworkUrl = track.ThumbUrl;
-			player.ShouldLoopPlayback = episodeVideo is null && Repeat == RepeatMode.One; // negli episodi il ripeti non c'è
-			sourceSet = true;
-#if WINDOWS || MACCATALYST
-			player.Source = MediaSource.FromUri(url);
-#else
-			player.Source = MediaSource.FromStream(next);
-#endif
-			(stream, var previous) = (next, stream);
-			if (previous is not null)
-				_ = Task.Run(previous.Dispose); // chiude connessioni HTTP: mai sul thread UI
+			// Per la cache lo stesso stream che si suona, scaricato a segmenti come sopra.
+			SetSource(track, source, next, videoId,
+				token => AudioCache.SaveAsync(videoId, audio.Container.Name, (path, t) => youtube.Videos.Streams.DownloadAsync(audio, path, null, t).AsTask(), token));
 		}
 		catch (OperationCanceledException) when (cts.IsCancellationRequested)
 		{
@@ -493,6 +512,36 @@ public sealed partial class PlayerViewModel(YoutubeClient youtube, LibraryStore 
 			Fail();
 		}
 	}
+
+	// L'audio pronto per il brano in corso. I metadata vanno impostati prima di Source: li legge quando prepara la
+	// notifica. Arrivato dalla rete: key è la sua chiave in cache e download lo scarica (parte quando suona, vedi
+	// OnStateChanged).
+	void SetSource(Track track, MediaSource source, Stream? next = null, string? key = null, Func<CancellationToken, Task>? download = null)
+	{
+		if (player is null)
+			return;
+		player.MetadataTitle = track.Title;
+		player.MetadataArtist = track.Artist;
+		player.MetadataArtworkUrl = track.ThumbUrl;
+		player.ShouldLoopPlayback = !track.IsEpisode && Repeat == RepeatMode.One; // negli episodi il ripeti non c'è
+		sourceSet = true;
+		streamedKey = key;
+		AudioCache.InUse = source is FileMediaSource file ? Path.GetFileName(file.Path) : null;
+		// ponytail: in cache solo fino a 30 minuti (né mix di ore né dirette, che non hanno durata); il resto in streaming.
+		toDownload = track.Duration <= AudioCache.MaxDuration ? download : null;
+		player.Source = source;
+		(stream, var previous) = (next, stream);
+		if (previous is not null)
+			_ = Task.Run(previous.Dispose); // chiude connessioni HTTP: mai sul thread UI
+	}
+
+	// Lo stream audio che si suona e si mette in cache. Media Foundation (Windows) suona Opus/WebM solo con l'estensione
+	// "Web Media Extensions" e AVFoundation (Mac) per niente: lì AAC/MP4, che c'è sempre; altrove il bitrate più alto.
+	static IStreamInfo PickAudio(StreamManifest manifest) =>
+#if WINDOWS || MACCATALYST
+		manifest.GetAudioOnlyStreams().Where(s => s.Container == Container.Mp4).TryGetWithHighestBitrate() ??
+#endif
+		manifest.GetAudioOnlyStreams().GetWithHighestBitrate();
 
 	// Manifest degli stream YouTube per video: è la parte lenta del cambio brano (2-5 s, contro ~0,2 s per aprire lo
 	// stream e leggerne l'inizio), quindi si chiede in anticipo per i prossimi della coda e si riusa. La richiesta non

@@ -87,6 +87,16 @@ public sealed partial class PodcastService(YoutubeClient youtube)
 		return final.Scheme == Uri.UriSchemeHttp ? new UriBuilder(final) { Scheme = Uri.UriSchemeHttps, Port = -1 }.Uri : final;
 	}
 
+	// Episodio intero su file, per la cache audio (vedi AudioCache). Con ResponseHeadersRead il timeout di 20 s del client
+	// vale fino agli header, non per tutto il download.
+	public static async Task DownloadAsync(Uri uri, string path, CancellationToken token)
+	{
+		using var response = await Http.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, token);
+		response.EnsureSuccessStatusCode();
+		await using var file = File.Create(path);
+		await response.Content.CopyToAsync(file, token);
+	}
+
 	// --- Canali YouTube ---
 
 	public async Task<List<Podcast>> SearchChannelsAsync(string query, CancellationToken token)

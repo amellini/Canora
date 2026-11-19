@@ -172,7 +172,10 @@ public partial class MainPage : ContentPage
 		SideBar.WidthRequest = expanded ? ExpandedSideBar : CollapsedSideBar;
 		foreach (var item in sideItems)
 			item.Label.IsVisible = expanded;
+		SideSettingsLabel.IsVisible = expanded;
 	}
+
+	void OnSettingsTapped(object? sender, TappedEventArgs e) => library.SettingsCommand.Execute(null);
 
 	const double CollapsedSideBar = 57; // 56 di icone + 1 di bordo
 	const double ExpandedSideBar = 220;
