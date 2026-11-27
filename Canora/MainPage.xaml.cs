@@ -147,7 +147,9 @@ public partial class MainPage : ContentPage
 	{
 		var index = int.Parse((string)e.Parameter!);
 		// Un tocco sulla nav esce dai dettagli (podcast, artista, album); un secondo tocco su Libreria torna all'elenco,
-		// come Spotify.
+		// come Spotify. Sulla barra laterale (Windows) il player espanso resta scoperto: torna mini-player, anche sul
+		// tab già attivo.
+		CollapsePlayer();
 		podcasts.Close();
 		catalog.Close();
 		if (index == LibraryTab && current == LibraryTab)
@@ -175,7 +177,17 @@ public partial class MainPage : ContentPage
 		SideSettingsLabel.IsVisible = expanded;
 	}
 
-	void OnSettingsTapped(object? sender, TappedEventArgs e) => library.SettingsCommand.Execute(null);
+	void OnSettingsTapped(object? sender, TappedEventArgs e)
+	{
+		CollapsePlayer();
+		library.SettingsCommand.Execute(null);
+	}
+
+	void CollapsePlayer()
+	{
+		if (NowPlaying.IsVisible)
+			_ = NowPlaying.HideAsync();
+	}
 
 	const double CollapsedSideBar = 57; // 56 di icone + 1 di bordo
 	const double ExpandedSideBar = 220;
