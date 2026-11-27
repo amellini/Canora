@@ -130,7 +130,7 @@ public partial class NowPlayingView : ContentView
 		Place(SeekBar, 2, 1, 0, span);
 		Place(Times, 3, 1, 0, span);
 		Place(Buttons, landscape ? 0 : 4, landscape ? 4 : 1, landscape ? 1 : 0, span);
-		SeekBar.Margin = new Thickness(17, landscape ? 16 : 32, 15, 0);
+		SeekBar.Margin = new Thickness(17, landscape ? 6 : 22, 15, -10); // griglia alta 30 per il tocco, barra al centro
 		var inset = landscape ? SystemInsets() : default;
 #if ANDROID
 		// Su Android la safe area è padding nativo della griglia, che di suo ritaglia i figli: senza questo copertina

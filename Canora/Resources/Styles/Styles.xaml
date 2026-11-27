@@ -107,6 +107,21 @@
 		<Setter Property="TextColor" Value="{DynamicResource TextPlayer}" />
 	</Style>
 
+	<!-- Fumetto del tempo mentre si trascina la barra (player e mini-player), con i colori del toast -->
+	<Style x:Key="SeekBubble" TargetType="Border">
+		<Setter Property="BackgroundColor" Value="{DynamicResource Toast}" />
+		<Setter Property="StrokeThickness" Value="0" />
+		<Setter Property="StrokeShape" Value="RoundRectangle 6" />
+		<Setter Property="Padding" Value="8,3" />
+		<Setter Property="InputTransparent" Value="True" />
+	</Style>
+
+	<Style x:Key="SeekBubbleText" TargetType="Label">
+		<Setter Property="FontFamily" Value="MontserratBold" />
+		<Setter Property="FontSize" Value="14" />
+		<Setter Property="TextColor" Value="{DynamicResource Background}" />
+	</Style>
+
 	<!-- Mini-player (non nel Figma): stessa famiglia, scala ridotta -->
 	<Style x:Key="MiniTitle" TargetType="Label">
 		<Setter Property="FontFamily" Value="MontserratBold" />

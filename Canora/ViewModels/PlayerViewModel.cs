@@ -92,7 +92,8 @@ public sealed partial class PlayerViewModel(YoutubeClient youtube, LibraryStore 
 	public string PlayModeIcon => IsShuffle ? "ic_shuffle.png" : "ic_repeat.png";
 	public bool IsPlayModeOn => IsShuffle || IsRepeatOn;
 
-	// Secondi. TwoWay con lo Slider: mentre si trascina (IsSeeking) il player non lo sovrascrive.
+	// Secondi. TwoWay con gli Slider di player e mini-player: mentre si trascina (isSeeking) è l'anteprima di dove si
+	// andrà e il player non lo sovrascrive; il seek vero parte al rilascio (SeekCompleted).
 	[ObservableProperty]
 	[NotifyPropertyChangedFor(nameof(Progress), nameof(PositionText), nameof(ProgressBounds), nameof(ThumbBounds))]
 	public partial double Position { get; set; }
@@ -105,6 +106,10 @@ public sealed partial class PlayerViewModel(YoutubeClient youtube, LibraryStore 
 	public double Progress => Duration > 0 ? Math.Clamp(Position / Duration, 0, 1) : 0;
 	public string PositionText => Format(Position);
 	public string DurationText => Format(Duration);
+
+	// Dito (o mouse) sulla barra: il fumetto col tempo d'arrivo sopra il pallino, finché non si rilascia.
+	[ObservableProperty]
+	public partial bool IsDragging { get; private set; }
 
 	// Seek bar disegnata con un AbsoluteLayout proporzionale (traccia 4px + pallino 10px del Figma):
 	// barra = larghezza proporzionale, pallino = X proporzionale (resta dentro i bordi da solo).
@@ -324,7 +329,7 @@ public sealed partial class PlayerViewModel(YoutubeClient youtube, LibraryStore 
 
 	void CountListen()
 	{
-		if (listenCounted || IsLoading || Current is not { IsEpisode: false } track || Duration <= 0 || Position < Math.Min(30, Duration / 2))
+		if (listenCounted || IsLoading || isSeeking || Current is not { IsEpisode: false } track || Duration <= 0 || Position < Math.Min(30, Duration / 2))
 			return;
 		listenCounted = true;
 		library.AddListen(track);
@@ -339,9 +344,11 @@ public sealed partial class PlayerViewModel(YoutubeClient youtube, LibraryStore 
 	// avanzamento. Quando mancano meno di 2 minuti (sigle, saluti, pubblicità in coda; per un episodio breve al più il 10%)
 	// conta come ascoltato, ma la posizione resta: lo si riprende da dove si era. Solo la fine vera e il pulsante
 	// "Ascoltato" la azzerano (vedi PodcastStore.SetListened).
+	// Durante un trascinamento Position è solo l'anteprima: né l'ascolto (CountListen) né l'avanzamento contano finché
+	// il seek non è fatto.
 	void SaveProgress()
 	{
-		if (Current is not { } track || Position <= 0 || resumeAt > 0 || switching || player?.Source is null)
+		if (Current is not { } track || Position <= 0 || resumeAt > 0 || switching || isSeeking || player?.Source is null)
 			return;
 		progressSaved = DateTime.Now;
 		state.SavePosition(Position, Duration);
@@ -797,14 +804,22 @@ public sealed partial class PlayerViewModel(YoutubeClient youtube, LibraryStore 
 	}
 
 	[RelayCommand]
-	void SeekStarted() => isSeeking = true;
+	void SeekStarted() => isSeeking = IsDragging = true;
 
+	// Rilascio: il fumetto sparisce subito, la posizione resta quella scelta finché il seek non è fatto.
 	[RelayCommand]
 	async Task SeekCompleted()
 	{
-		if (player is not null && !SeekUnloaded(Position))
-			await player.SeekTo(TimeSpan.FromSeconds(Position));
-		isSeeking = false;
+		IsDragging = false;
+		try
+		{
+			if (player is not null && !SeekUnloaded(Position))
+				await player.SeekTo(TimeSpan.FromSeconds(Position));
+		}
+		finally
+		{
+			isSeeking = false; // anche se il seek fallisce: posizione, ascolti e salvataggi non restano fermi
+		}
 	}
 
 	// Pulsante "+": pagina di scelta della playlist (con creazione), poi si torna dov'eri.

@@ -89,67 +89,89 @@
 			<VerticalStackLayout VerticalOptions="End" Background="{DynamicResource BottomFade}" Padding="0,28,0,0" SafeAreaEdges="None">
 
 				<!-- Mini-player (non nel Figma): colore della copertina, come Spotify -->
-				<Border IsVisible="{Binding HasTrack}" Margin="8,0,8,6" Padding="8,8,8,4" StrokeThickness="0" StrokeShape="RoundRectangle 6" BackgroundColor="{Binding AccentDeep}">
-					<Grid ColumnDefinitions="40,*,Auto,40,32,40,32" RowDefinitions="40,Auto" ColumnSpacing="8">
-						<ShinyImage Uri="{Binding Current.ThumbUrl}" Aspect="AspectFill">
-							<ShinyImage.Clip>
-								<RoundRectangleGeometry Rect="0,0,40,40" CornerRadius="4" />
-							</ShinyImage.Clip>
-						</ShinyImage>
-						<VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="1" Margin="4,0,0,0">
-							<Label Text="{Binding Current.Title}" Style="{StaticResource MiniTitle}" />
-							<Label Text="{Binding Current.Artist}" Style="{StaticResource MiniArtist}" />
-						</VerticalStackLayout>
-						<!-- Windows: volume (lo stesso del player espanso, salvato fra un avvio e l'altro) -->
-						<HorizontalStackLayout Grid.Column="2" IsVisible="{OnIdiom Default=False, Desktop=True}" Spacing="8" VerticalOptions="Center" Margin="0,0,12,0">
-							<Label Text="&#xE767;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" TextColor="{DynamicResource TextPrimary}" VerticalOptions="Center" />
-							<Slider Value="{Binding Volume}" Minimum="0" Maximum="1" WidthRequest="120" VerticalOptions="Center"
-									MinimumTrackColor="{DynamicResource TextPrimary}" MaximumTrackColor="{DynamicResource ProgressTrack}" ThumbColor="{DynamicResource TextPrimary}"
-									SemanticProperties.Description="Volume" />
-						</HorizontalStackLayout>
-						<Grid Grid.Column="3" IsVisible="{Binding CanAddToPlaylist}" SemanticProperties.Description="Aggiungi a playlist">
-							<Image Source="ic_add.png" WidthRequest="24" HeightRequest="24" Style="{StaticResource Icon}" />
-							<Grid.GestureRecognizers>
-								<TapGestureRecognizer Command="{Binding AddToPlaylistCommand}" />
-							</Grid.GestureRecognizers>
+				<Grid IsVisible="{Binding HasTrack}" Margin="8,0">
+					<Border Margin="0,0,0,6" Padding="8,8,8,4" StrokeThickness="0" StrokeShape="RoundRectangle 6" BackgroundColor="{Binding AccentDeep}">
+						<Grid ColumnDefinitions="40,*,Auto,40,32,40,32" RowDefinitions="40,Auto" ColumnSpacing="8">
+							<ShinyImage Uri="{Binding Current.ThumbUrl}" Aspect="AspectFill">
+								<ShinyImage.Clip>
+									<RoundRectangleGeometry Rect="0,0,40,40" CornerRadius="4" />
+								</ShinyImage.Clip>
+							</ShinyImage>
+							<VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="1" Margin="4,0,0,0">
+								<Label Text="{Binding Current.Title}" Style="{StaticResource MiniTitle}" />
+								<Label Text="{Binding Current.Artist}" Style="{StaticResource MiniArtist}" />
+							</VerticalStackLayout>
+							<!-- Windows: volume (lo stesso del player espanso, salvato fra un avvio e l'altro) -->
+							<HorizontalStackLayout Grid.Column="2" IsVisible="{OnIdiom Default=False, Desktop=True}" Spacing="8" VerticalOptions="Center" Margin="0,0,12,0">
+								<Label Text="&#xE767;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16" TextColor="{DynamicResource TextPrimary}" VerticalOptions="Center" />
+								<Slider Value="{Binding Volume}" Minimum="0" Maximum="1" WidthRequest="120" VerticalOptions="Center"
+										MinimumTrackColor="{DynamicResource TextPrimary}" MaximumTrackColor="{DynamicResource ProgressTrack}" ThumbColor="{DynamicResource TextPrimary}"
+										SemanticProperties.Description="Volume" />
+							</HorizontalStackLayout>
+							<Grid Grid.Column="3" IsVisible="{Binding CanAddToPlaylist}" SemanticProperties.Description="Aggiungi a playlist">
+								<Image Source="ic_add.png" WidthRequest="24" HeightRequest="24" Style="{StaticResource Icon}" />
+								<Grid.GestureRecognizers>
+									<TapGestureRecognizer Command="{Binding AddToPlaylistCommand}" />
+								</Grid.GestureRecognizers>
+							</Grid>
+							<!-- Precedente e successivo ai lati del play, come nel player espanso -->
+							<Grid Grid.Column="4" SemanticProperties.Description="Precedente">
+								<Image Source="ic_next.png" WidthRequest="18" HeightRequest="21" ScaleX="-1" Style="{StaticResource Icon}" />
+								<Grid.GestureRecognizers>
+									<TapGestureRecognizer Command="{Binding PreviousCommand}" />
+								</Grid.GestureRecognizers>
+							</Grid>
+							<Grid Grid.Column="6" SemanticProperties.Description="Successivo">
+								<Image Source="ic_next.png" WidthRequest="18" HeightRequest="21" Style="{StaticResource Icon}" />
+								<Grid.GestureRecognizers>
+									<TapGestureRecognizer Command="{Binding NextCommand}" />
+								</Grid.GestureRecognizers>
+							</Grid>
+							<Grid Grid.Column="5" SemanticProperties.Description="Riproduci o metti in pausa">
+								<Image Source="ic_play_circle.png" WidthRequest="32" HeightRequest="32" Style="{StaticResource Icon}">
+									<Image.Triggers>
+										<DataTrigger TargetType="Image" Binding="{Binding IsPlaying}" Value="True">
+											<Setter Property="Source" Value="ic_pause_circle.png" />
+										</DataTrigger>
+									</Image.Triggers>
+								</Image>
+								<Ellipse Fill="{DynamicResource TextPrimary}" WidthRequest="32" HeightRequest="32" IsVisible="{Binding IsLoading}" />
+								<ActivityIndicator Color="{DynamicResource Background}" IsRunning="{Binding IsLoading}" IsVisible="{Binding IsLoading}" WidthRequest="18" HeightRequest="18" />
+								<Grid.GestureRecognizers>
+									<TapGestureRecognizer Command="{Binding TogglePlayCommand}" />
+								</Grid.GestureRecognizers>
+							</Grid>
+							<!-- Avanzamento: linea da 2px sul fondo della card (ScaleX ancorato a sinistra = percentuale) -->
+							<Grid Grid.Row="1" Grid.ColumnSpan="7" HeightRequest="2" Margin="0,8,0,0">
+								<BoxView Color="{DynamicResource ProgressTrack}" CornerRadius="1" />
+								<BoxView Color="{DynamicResource TextPrimary}" CornerRadius="1" AnchorX="0" ScaleX="{Binding Progress}" />
+							</Grid>
 						</Grid>
-						<!-- Precedente e successivo ai lati del play, come nel player espanso -->
-						<Grid Grid.Column="4" SemanticProperties.Description="Precedente">
-							<Image Source="ic_next.png" WidthRequest="18" HeightRequest="21" ScaleX="-1" Style="{StaticResource Icon}" />
-							<Grid.GestureRecognizers>
-								<TapGestureRecognizer Command="{Binding PreviousCommand}" />
-							</Grid.GestureRecognizers>
-						</Grid>
-						<Grid Grid.Column="6" SemanticProperties.Description="Successivo">
-							<Image Source="ic_next.png" WidthRequest="18" HeightRequest="21" Style="{StaticResource Icon}" />
-							<Grid.GestureRecognizers>
-								<TapGestureRecognizer Command="{Binding NextCommand}" />
-							</Grid.GestureRecognizers>
-						</Grid>
-						<Grid Grid.Column="5" SemanticProperties.Description="Riproduci o metti in pausa">
-							<Image Source="ic_play_circle.png" WidthRequest="32" HeightRequest="32" Style="{StaticResource Icon}">
-								<Image.Triggers>
-									<DataTrigger TargetType="Image" Binding="{Binding IsPlaying}" Value="True">
-										<Setter Property="Source" Value="ic_pause_circle.png" />
-									</DataTrigger>
-								</Image.Triggers>
-							</Image>
-							<Ellipse Fill="{DynamicResource TextPrimary}" WidthRequest="32" HeightRequest="32" IsVisible="{Binding IsLoading}" />
-							<ActivityIndicator Color="{DynamicResource Background}" IsRunning="{Binding IsLoading}" IsVisible="{Binding IsLoading}" WidthRequest="18" HeightRequest="18" />
-							<Grid.GestureRecognizers>
-								<TapGestureRecognizer Command="{Binding TogglePlayCommand}" />
-							</Grid.GestureRecognizers>
-						</Grid>
-						<!-- Avanzamento: linea da 2px sul fondo della card (ScaleX ancorato a sinistra = percentuale) -->
-						<Grid Grid.Row="1" Grid.ColumnSpan="7" HeightRequest="2" Margin="0,8,0,0">
-							<BoxView Color="{DynamicResource ProgressTrack}" CornerRadius="1" />
-							<BoxView Color="{DynamicResource TextPrimary}" CornerRadius="1" AnchorX="0" ScaleX="{Binding Progress}" />
-						</Grid>
+						<Border.GestureRecognizers>
+							<TapGestureRecognizer Tapped="OnMiniPlayerTapped" />
+						</Border.GestureRecognizers>
+					</Border>
+					<!-- Trascinamento sulla linea d'avanzamento, come nel player espanso (seek al rilascio). Fuori dalla Border:
+					     un tocco qui non apre il player e il fumetto del tempo sale sopra la card senza essere ritagliato. Fascia
+					     alta 20 centrata sulla linea (5 sopra il fondo della card); lo Slider sborda di 14 ai lati come nel player,
+					     così il dito e la linea coincidono agli estremi. -->
+					<Grid VerticalOptions="End" HeightRequest="20" Margin="8,0,8,1">
+						<AbsoluteLayout HeightRequest="2" VerticalOptions="Center" InputTransparent="True">
+							<Border AbsoluteLayout.LayoutBounds="{Binding ThumbBounds}" AbsoluteLayout.LayoutFlags="XProportional,YProportional" IsVisible="{Binding IsDragging}"
+									TranslationY="-72" Style="{StaticResource SeekBubble}">
+								<Label Text="{Binding PositionText}" Style="{StaticResource SeekBubbleText}" />
+							</Border>
+						</AbsoluteLayout>
+						<Slider Minimum="0"
+								Maximum="{Binding SliderMaximum}"
+								Value="{Binding Position}"
+								DragStartedCommand="{Binding SeekStartedCommand}"
+								DragCompletedCommand="{Binding SeekCompletedCommand}"
+								Opacity="0.01"
+								Margin="-14,0"
+								SemanticProperties.Description="Posizione nel brano" />
 					</Grid>
-					<Border.GestureRecognizers>
-						<TapGestureRecognizer Tapped="OnMiniPlayerTapped" />
-					</Border.GestureRecognizers>
-				</Border>
+				</Grid>
 
 				<!-- Nav: icona 52×34 + etichetta Book 12; attivo bianco, inattivo #B1B7B2. Quattro posti come nel Figma:
 				     "Premium" è diventato Podcast. -->

@@ -141,12 +141,19 @@
 		</Grid>
 
 		<!-- Range: traccia 4px #3D3C38, avanzamento bianco, pallino 10px. Lo Slider sopra, quasi trasparente,
-		     gestisce solo il trascinamento: lo Slider Material 3 di MAUI 11 non ha questo aspetto. -->
-		<Grid x:Name="SeekBar" Grid.Row="2" Grid.ColumnSpan="2" Margin="17,32,15,0" HeightRequest="10">
-			<AbsoluteLayout>
+		     gestisce solo il trascinamento: lo Slider Material 3 di MAUI 11 non ha questo aspetto. La griglia è alta 30
+		     (la barra al centro) perché su Android il tocco arriva allo Slider solo dentro di lei; il margine inferiore
+		     negativo lascia i tempi dov'erano. Il margine superiore lo imposta il code-behind (OnSizeAllocated). -->
+		<Grid x:Name="SeekBar" Grid.Row="2" Grid.ColumnSpan="2" Margin="17,22,15,-10" HeightRequest="30">
+			<AbsoluteLayout HeightRequest="10" VerticalOptions="Center">
 				<BoxView x:Name="Rail" AbsoluteLayout.LayoutBounds="0,0.5,1,4" AbsoluteLayout.LayoutFlags="WidthProportional,YProportional" Color="{DynamicResource SeekRail}" CornerRadius="2" />
 				<BoxView AbsoluteLayout.LayoutBounds="{Binding ProgressBounds}" AbsoluteLayout.LayoutFlags="WidthProportional,YProportional" HeightRequest="4" Color="{DynamicResource TextPrimary}" CornerRadius="2" />
 				<Ellipse AbsoluteLayout.LayoutBounds="{Binding ThumbBounds}" AbsoluteLayout.LayoutFlags="XProportional,YProportional" WidthRequest="10" HeightRequest="10" Fill="{DynamicResource TextPrimary}" />
+				<!-- Mentre si trascina: dove si andrà al rilascio, sopra il pallino (sul telefono più in alto, fuori dal dito) -->
+				<Border AbsoluteLayout.LayoutBounds="{Binding ThumbBounds}" AbsoluteLayout.LayoutFlags="XProportional,YProportional" IsVisible="{Binding IsDragging}"
+						TranslationY="{OnIdiom Default=-56, Desktop=-26}" Style="{StaticResource SeekBubble}">
+					<Label Text="{Binding PositionText}" Style="{StaticResource SeekBubbleText}" />
+				</Border>
 			</AbsoluteLayout>
 			<Slider Minimum="0"
 					Maximum="{Binding SliderMaximum}"
@@ -154,7 +161,7 @@
 					DragStartedCommand="{Binding SeekStartedCommand}"
 					DragCompletedCommand="{Binding SeekCompletedCommand}"
 					Opacity="0.01"
-					Margin="-14,-16"
+					Margin="-14,-6"
 					SemanticProperties.Description="Posizione nel brano" />
 		</Grid>
 
