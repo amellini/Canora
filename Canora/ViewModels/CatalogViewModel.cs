@@ -194,24 +194,30 @@ public sealed partial class CatalogViewModel(CatalogService catalog, PlayerViewM
 	[RelayCommand]
 	Task AddAlbumToPlaylist() => player.AddToPlaylistAsync([.. AlbumTracks]);
 
-	// "+" della pagina artista: i più ascoltati in una playlist nuova col nome dell'artista, senza chiedere. Se quel nome
-	// c'è già, la si crea come dalla Libreria, con il primo nome libero ("Queen 2") da confermare o cambiare.
+	// "+" della pagina artista: i più ascoltati in una playlist nuova col nome dell'artista, senza chiedere.
 	[RelayCommand]
-	async Task AddTopToPlaylist()
+	Task AddTopToPlaylist() => Artist is { } artist ? CreatePlaylistAsync(artist.Name, [.. TopTracks]) : Task.CompletedTask;
+
+	// Pagina album: l'album intero in una playlist nuova col suo titolo. La copertina di una playlist è quella del primo
+	// brano, e i brani di un album hanno tutti la copertina dell'album.
+	[RelayCommand]
+	Task CreateAlbumPlaylist() => Album is { } album ? CreatePlaylistAsync(album.Title, [.. AlbumTracks]) : Task.CompletedTask;
+
+	// Se quel nome c'è già, la si crea come dalla Libreria, con il primo nome libero ("Queen 2") da confermare o cambiare.
+	async Task CreatePlaylistAsync(string name, IReadOnlyList<Track> tracks)
 	{
-		if (Artist is not { } artist || TopTracks.Count == 0)
+		if (tracks.Count == 0 || string.IsNullOrWhiteSpace(name))
 			return;
-		bool Exists(string name) => library.Playlists.Any(p => string.Equals(p.Name, name, StringComparison.CurrentCultureIgnoreCase));
-		var name = artist.Name;
+		bool Exists(string candidate) => library.Playlists.Any(p => string.Equals(p.Name, candidate, StringComparison.CurrentCultureIgnoreCase));
 		if (Exists(name))
 		{
-			var free = Enumerable.Range(2, int.MaxValue - 2).Select(n => $"{artist.Name} {n}").First(n => !Exists(n));
+			var free = Enumerable.Range(2, int.MaxValue - 2).Select(n => $"{name} {n}").First(n => !Exists(n));
 			if (await ActionPopup.PromptAsync("Nuova playlist", free, "Crea") is not { } chosen)
 				return;
 			name = chosen;
 		}
 		var playlist = library.CreatePlaylist(name);
-		foreach (var track in TopTracks)
+		foreach (var track in tracks)
 			library.AddToPlaylist(playlist.Id, track);
 		player.Notify($"Creata la playlist «{playlist.Name}»");
 	}

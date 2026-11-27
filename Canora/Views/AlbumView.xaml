@@ -22,8 +22,9 @@
 					</Hero>
 
 					<VerticalStackLayout Padding="18,0">
-						<!-- Buttons: shuffle, "+" (tutto l'album in una playlist), play verde 60 -->
-						<Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="35" HeightRequest="60" Margin="0,16,0,0">
+						<!-- Buttons: shuffle, "+" (tutto l'album in una playlist esistente o nuova, a scelta), crea playlist (nuova,
+						     col titolo dell'album), play verde 60 -->
+						<Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto" ColumnSpacing="35" HeightRequest="60" Margin="0,16,0,0">
 							<Image Source="ic_shuffle.png" WidthRequest="30" HeightRequest="30" Style="{StaticResource Icon}" SemanticProperties.Description="Riproduzione casuale">
 								<Image.Triggers>
 									<DataTrigger TargetType="Image" Binding="{Binding Player.IsShuffle}" Value="True">
@@ -34,12 +35,17 @@
 									<TapGestureRecognizer Command="{Binding Player.ToggleShuffleCommand}" />
 								</Image.GestureRecognizers>
 							</Image>
-							<Image Grid.Column="1" Source="ic_add.png" WidthRequest="30" HeightRequest="30" Style="{StaticResource Icon}" SemanticProperties.Description="Aggiungi l'album a una playlist">
+							<Image Grid.Column="1" Source="ic_add.png" WidthRequest="30" HeightRequest="30" Style="{StaticResource Icon}" SemanticProperties.Description="Aggiungi l'album a una playlist" ToolTipProperties.Text="Aggiungi a una playlist">
 								<Image.GestureRecognizers>
 									<TapGestureRecognizer Command="{Binding AddAlbumToPlaylistCommand}" />
 								</Image.GestureRecognizers>
 							</Image>
-							<PlayAllButton Grid.Column="3" Items="{Binding AlbumTracks}" Command="{Binding PlayAlbumCommand}" />
+							<Image Grid.Column="2" Source="ic_playlist_add.png" WidthRequest="30" HeightRequest="30" Style="{StaticResource Icon}" SemanticProperties.Description="Crea una playlist con l'album" ToolTipProperties.Text="Crea una playlist con l'album">
+								<Image.GestureRecognizers>
+									<TapGestureRecognizer Command="{Binding CreateAlbumPlaylistCommand}" />
+								</Image.GestureRecognizers>
+							</Image>
+							<PlayAllButton Grid.Column="4" Items="{Binding AlbumTracks}" Command="{Binding PlayAlbumCommand}" />
 						</Grid>
 						<ActivityIndicator IsRunning="{Binding IsLoadingAlbum}" IsVisible="{Binding IsLoadingAlbum}" Margin="0,24,0,0" />
 						<Label Text="Impossibile caricare l'album. Controlla la connessione." Style="{StaticResource Caption}" HorizontalTextAlignment="Center" Margin="0,24,0,0" IsVisible="{Binding LoadFailed}" />
